@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+import { Button } from '@/components/ui/button';
 
 export default async function DashboardPage() {
   const supabase = createClient();
@@ -35,7 +36,15 @@ export default async function DashboardPage() {
 
       <div className="grid gap-6">
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Today&apos;s Tasks</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">Today&apos;s Tasks</h2>
+            <Button 
+              variant="outline" 
+              onClick={() => window.location.href = '/admin'}
+            >
+              Admin Panel
+            </Button>
+          </div>
           <p className="text-muted-foreground">
             Your tasks will appear here once you set up your Supabase database.
           </p>
