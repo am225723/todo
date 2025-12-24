@@ -23,58 +23,73 @@ export async function POST(request: NextRequest) {
 
     const supabase = createClient();
 
-    // Since we're using PIN-only auth, we need to find user by trying all active users
-    const { data: users, error: usersError } = await supabase
-      .from('TODO_USERS')
+    // Get all active users and find the one with matching PIN
+    const { data: users, error } = await supabase
+      .from('TODO_users')
       .select('*')
       .eq('is_active', true);
 
-    if (usersError || !users || users.length === 0) {
+    if (error) {
+      console.log('Database error:', error);
+      return NextResponse.json(
+        { error: 'Database error' },
+        { status: 500 }
+      );
+    }
+
+    if (!users || users.length === 0) {
+      console.log('No active users found in database');
       return NextResponse.json(
         { error: 'No active users found' },
         { status: 401 }
       );
     }
 
-    // Try to find a user with matching PIN
-    let authenticatedUser = null;
+    console.log(`Found ${users.length} active users, checking PIN: ${pin}`);
+
+    // Find user with matching PIN
+    let validUser = null;
     for (const user of users) {
-      const isValid = await verifyPin(pin, user.pin_hash);
-      if (isValid) {
-        authenticatedUser = user;
+      const isValidPin = await verifyPin(pin, user.pin_hash);
+      if (isValidPin) {
+        validUser = user;
         break;
       }
     }
 
-    if (!authenticatedUser) {
+    if (!validUser) {
+      console.log('No user found with matching PIN');
       return NextResponse.json(
         { error: 'Invalid PIN' },
         { status: 401 }
       );
     }
 
-    // Get user profile
+    // Get user profile if available
     const { data: profile } = await supabase
-      .from('TODO_USER_PROFILES')
+      .from('TODO_user_profiles')
       .select('*')
-      .eq('user_id', authenticatedUser.id)
+      .eq('user_id', validUser.id)
       .single();
 
     // Update last login
     await supabase
-      .from('TODO_USERS')
-      .update({ updated_at: new Date().toISOString() })
-      .eq('id', authenticatedUser.id);
+      .from('TODO_users')
+      .update({ last_login: new Date().toISOString() })
+      .eq('id', validUser.id);
 
     return NextResponse.json({
       success: true,
       user: {
-        id: authenticatedUser.id,
-        email: authenticatedUser.email,
-        display_name: profile?.display_name || null,
+        id: validUser.id,
+        email: validUser.email,
+        full_name: validUser.full_name,
+        display_name: profile?.display_name || validUser.full_name,
+        role: validUser.role
       },
       redirect_url: '/dashboard'
     });
+
   } catch (error) {
     console.error('Login error:', error);
     return NextResponse.json(
