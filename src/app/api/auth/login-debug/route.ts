@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import bcrypt from 'bcryptjs';
+import { User } from '@/types';
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,7 +41,8 @@ export async function POST(request: NextRequest) {
     const { data: users, error } = await supabase
       .from('TODO_users')
       .select('*')
-      .eq('is_active', true);
+      .eq('is_active', true)
+      .returns<User[]>();
 
     if (error) {
       console.log('❌ DEBUG: User fetch error:', error);
@@ -65,7 +67,7 @@ export async function POST(request: NextRequest) {
 
     // Test PIN against each user
     console.log('🔍 DEBUG: Testing PIN against users...');
-    let validUser = null;
+    let validUser: User | null = null;
     let attempts = 0;
 
     for (const user of users) {
@@ -97,8 +99,8 @@ export async function POST(request: NextRequest) {
 
     // Update last login
     console.log('🔍 DEBUG: Updating last login...');
-    await supabase
-      .from('TODO_users')
+    await (supabase
+      .from('TODO_users') as any)
       .update({ last_login: new Date().toISOString() })
       .eq('id', validUser.id);
 
@@ -114,7 +116,7 @@ export async function POST(request: NextRequest) {
       }
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ DEBUG: Login error:', error);
     return NextResponse.json(
       { error: 'Internal server error', details: error.message },
