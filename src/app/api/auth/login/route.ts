@@ -1,82 +1,78 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { verifyPin, validatePinFormat } from '@/lib/auth/pin';
-import type { Database } from '@/types';
+import bcrypt from 'bcryptjs';
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, pin } = await request.json();
+    const { pin } = await request.json();
 
-    if (!email || !pin) {
+    if (!pin || pin.length < 4) {
       return NextResponse.json(
-        { error: 'Email and PIN are required' },
-        { status: 400 }
-      );
-    }
-
-    if (!validatePinFormat(pin)) {
-      return NextResponse.json(
-        { error: 'Invalid PIN format. Must be 4-6 digits.' },
+        { error: 'PIN is required and must be at least 4 digits' },
         { status: 400 }
       );
     }
 
     const supabase = createClient();
 
-    // Get user with PIN hash
-    const { data: user, error: userError } = await supabase
-      .from('TODO_USERS')
+    // Get all active users and find the one with matching PIN
+    const { data: users, error } = await supabase
+      .from('TODO_users')
       .select('*')
-      .eq('email', email)
-      .single()
-      .returns<Database['public']['Tables']['TODO_USERS']['Row'] | null>();
+      .eq('is_active', true);
 
-    if (userError || !user) {
+    if (error) {
+      console.log('Database error:', error);
       return NextResponse.json(
-        { error: 'Invalid credentials' },
+        { error: 'Database error' },
+        { status: 500 }
+      );
+    }
+
+    if (!users || users.length === 0) {
+      console.log('No active users found in database');
+      return NextResponse.json(
+        { error: 'No active users found' },
         { status: 401 }
       );
     }
 
-    // Type assertion to bypass TypeScript inference issue
-    const userData = user as any;
-    
-    if (!userData.is_active) {
-      return NextResponse.json(
-        { error: 'Account is inactive. Please contact administrator.' },
-        { status: 403 }
-      );
+    console.log(`Found ${users.length} active users, checking PIN: ${pin}`);
+
+    // Find user with matching PIN
+    let validUser = null;
+    for (const user of users) {
+      const isValidPin = await bcrypt.compare(pin, user.pin_hash);
+      if (isValidPin) {
+        validUser = user;
+        break;
+      }
     }
 
-    // Verify PIN
-    const isValid = await verifyPin(pin, userData.pin_hash);
-
-    if (!isValid) {
+    if (!validUser) {
+      console.log('No user found with matching PIN');
       return NextResponse.json(
-        { error: 'Invalid credentials' },
+        { error: 'Invalid PIN' },
         { status: 401 }
       );
     }
 
-    // Get user profile
-    const { data: profile } = await supabase
-      .from('TODO_USER_PROFILES')
-      .select('*')
-      .eq('user_id', userData.id)
-      .single();
+    // Update last login
+    await supabase
+      .from('TODO_users')
+      .update({ last_login: new Date().toISOString() })
+      .eq('id', validUser.id);
 
-    // Type assertion for profile
-    const profileData = profile as any;
-    
     return NextResponse.json({
       success: true,
       user: {
-        id: userData.id,
-        email: userData.email,
-        display_name: profileData?.display_name || null,
-      },
-      redirect_url: '/dashboard'
+        id: validUser.id,
+        email: validUser.email,
+        full_name: validUser.full_name,
+        role: validUser.role
+      }
     });
+
   } catch (error) {
     console.error('Login error:', error);
     return NextResponse.json(
