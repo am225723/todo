@@ -75,23 +75,23 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Welcome Back</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">To-Do List</CardTitle>
           <CardDescription className="text-center">
-            Enter your PIN to access your to-do list
+            Enter your PIN to access your tasks
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="pin">PIN</Label>
+              <Label htmlFor="pin" className="text-center block">Enter Your PIN</Label>
               <Input
                 id="pin"
                 type="password"
-                placeholder="Enter your 4-6 digit PIN"
+                placeholder="••••"
                 value={pin}
                 onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
                 maxLength={6}
-                className="text-center text-2xl tracking-widest"
+                className="text-center text-3xl tracking-widest font-mono"
                 autoFocus
               />
             </div>
