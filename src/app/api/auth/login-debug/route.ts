@@ -37,11 +37,10 @@ export async function POST(request: NextRequest) {
     console.log('✅ DEBUG: Database connection successful');
 
     // Get all active users
-    console.log('🔍 DEBUG: Fetching active users...');
+    console.log('🔍 DEBUG: Fetching all users (ignoring is_active status for debugging)...');
     const { data: users, error } = await supabase
       .from('todo_users')
       .select('*')
-      .eq('is_active', true)
       .returns<User[]>();
 
     if (error) {
@@ -53,9 +52,9 @@ export async function POST(request: NextRequest) {
     }
 
     if (!users || users.length === 0) {
-      console.log('❌ DEBUG: No active users found in database');
+      console.log('❌ DEBUG: No users found in database at all');
       return NextResponse.json(
-        { error: 'No active users found in database' },
+        { error: 'No users found in database table todo_users' },
         { status: 401 }
       );
     }
