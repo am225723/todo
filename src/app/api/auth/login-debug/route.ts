@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     // Test database connection
     console.log('🔍 DEBUG: Testing database connection...');
     const { data: testConnection, error: connectionError } = await supabase
-      .from('TODO_users')
+      .from('todo_users')
       .select('count')
       .limit(1);
 
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     // Get all active users
     console.log('🔍 DEBUG: Fetching active users...');
     const { data: users, error } = await supabase
-      .from('TODO_users')
+      .from('todo_users')
       .select('*')
       .eq('is_active', true)
       .returns<User[]>();
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
     // Update last login
     console.log('🔍 DEBUG: Updating last login...');
     await (supabase
-      .from('TODO_users') as any)
+      .from('todo_users') as any)
       .update({ last_login: new Date().toISOString() })
       .eq('id', validUser.id);
 
