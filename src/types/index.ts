@@ -113,6 +113,11 @@ export interface Database {
         Insert: Omit<User, 'id' | 'created_at' | 'updated_at'>;
         Update: Partial<Omit<User, 'id' | 'created_at' | 'updated_at'>>;
       };
+      todo_users: {
+        Row: User;
+        Insert: Omit<User, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<User, 'id' | 'created_at' | 'updated_at'>>;
+      };
       TODO_USER_PROFILES: {
         Row: UserProfile;
         Insert: Omit<UserProfile, 'id' | 'created_at' | 'updated_at'>;
@@ -120,6 +125,11 @@ export interface Database {
       };
       // Alias for lowercase usage
       TODO_user_profiles: {
+        Row: UserProfile;
+        Insert: Omit<UserProfile, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<UserProfile, 'id' | 'created_at' | 'updated_at'>>;
+      };
+      todo_user_profiles: {
         Row: UserProfile;
         Insert: Omit<UserProfile, 'id' | 'created_at' | 'updated_at'>;
         Update: Partial<Omit<UserProfile, 'id' | 'created_at' | 'updated_at'>>;
