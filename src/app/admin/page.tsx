@@ -17,6 +17,9 @@ interface User {
   updated_at: string;
 }
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export default function AdminPage() {
   const { user, loading } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
