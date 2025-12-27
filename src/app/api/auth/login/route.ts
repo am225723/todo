@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { verifyPin, validatePinFormat } from '@/lib/auth/pin';
 
 export async function POST(request: NextRequest) {
@@ -21,10 +22,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = createClient();
+    // Use Service Role Client to search users (bypassing RLS)
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceRoleKey = process.env.NEXT_SUPABASE_SERVICE_ROLE_KEY;
 
-    // Get all active users and find the one with matching PIN
-    const { data: users, error } = await supabase
+    if (!supabaseUrl || !serviceRoleKey) {
+        console.error("Missing Supabase Service Role credentials");
+        return NextResponse.json({ error: "Server misconfiguration" }, { status: 500 });
+    }
+
+    const serviceClient = createServiceClient(
+        supabaseUrl,
+        serviceRoleKey,
+        {
+            auth: {
+                autoRefreshToken: false,
+                persistSession: false
+            }
+        }
+    );
+
+    // Get all active users
+    const { data: users, error } = await serviceClient
       .from('TODO_USERS')
       .select('*')
       .eq('is_active', true);
@@ -45,15 +64,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`Found ${users.length} active users, checking PIN: ${pin}`);
-
     // Find user with matching PIN
     let validUser = null;
     for (const user of users) {
-      const isValidPin = await verifyPin(pin, user.pin_hash);
-      if (isValidPin) {
-        validUser = user;
-        break;
+      try {
+          const isValidPin = await verifyPin(pin, user.pin_hash);
+          if (isValidPin) {
+            validUser = user;
+            break;
+          }
+      } catch (e) {
+          console.error("Error verifying pin for user", user.id, e);
       }
     }
 
@@ -65,18 +86,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user profile if available
-    const { data: profile } = await supabase
+    // Get user profile if available (using service client)
+    const { data: profile } = await serviceClient
       .from('TODO_USER_PROFILES')
       .select('*')
       .eq('user_id', validUser.id)
       .single();
 
-    // Update last login
-    await supabase
+    // Update last login (using service client)
+    await serviceClient
       .from('TODO_USERS')
       .update({ last_login: new Date().toISOString() })
       .eq('id', validUser.id);
+
+    // Standard Supabase Auth Login to set cookies
+    // We use the standard client which is wired to cookies
+    const supabase = createClient();
+
+    // Check if the user exists in Auth (it should)
+    // We perform sign in
+    const paddedPin = pin + "00";
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: validUser.email,
+        password: paddedPin
+    });
+
+    if (signInError) {
+        console.error('Supabase Auth Sign In Error:', signInError);
+        return NextResponse.json({ error: 'Authentication failed' }, { status: 401 });
+    }
+
+    const isAdmin = validUser.is_admin || validUser.role === 'admin';
 
     return NextResponse.json({
       success: true,
@@ -85,9 +125,10 @@ export async function POST(request: NextRequest) {
         email: validUser.email,
         full_name: validUser.full_name,
         display_name: profile?.display_name || validUser.full_name,
-        role: validUser.role
+        role: validUser.role,
+        is_admin: isAdmin
       },
-      redirect_url: '/dashboard'
+      redirect_url: isAdmin ? '/admin' : '/dashboard'
     });
 
   } catch (error) {

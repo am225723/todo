@@ -19,64 +19,51 @@ interface UseAuthReturn {
 export function useAuth(): UseAuthReturn {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const supabase = createClient();
 
-  const fetchProfile = useCallback(async (userId: string) => {
-    const { data: profile, error } = await supabase
-      .from('TODO_USER_PROFILES')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
-
-    if (error) {
-      console.error('Error fetching profile:', error);
+  const fetchAuthData = useCallback(async () => {
+    try {
+      const response = await fetch('/api/auth/me');
+      if (response.ok) {
+        const data = await response.json();
+        setUser(data.user);
+        setProfile(data.profile);
+        setIsAdmin(data.isAdmin);
+        return data.user;
+      } else {
+        // If 401 or error, treat as not logged in (or handle error)
+        setUser(null);
+        setProfile(null);
+        setIsAdmin(false);
+        return null;
+      }
+    } catch (error) {
+      console.error('Error fetching auth data:', error);
       return null;
     }
-
-    return profile;
-  }, [supabase]);
-
-  const refreshProfile = async () => {
-    if (user) {
-      const profile = await fetchProfile(user.id);
-      setProfile(profile);
-    }
-  };
+  }, []);
 
   useEffect(() => {
     const initAuth = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        setUser(user);
-
-        if (user) {
-          const profile = await fetchProfile(user.id);
-          setProfile(profile);
-        }
-      } catch (error) {
-        console.error('Auth initialization error:', error);
-      } finally {
-        setLoading(false);
-      }
+      await fetchAuthData();
+      setLoading(false);
     };
 
     initAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          const profile = await fetchProfile(session.user.id);
-          setProfile(profile);
-        } else {
-          setProfile(null);
-        }
-
         if (event === 'SIGNED_OUT') {
+          setUser(null);
+          setProfile(null);
+          setIsAdmin(false);
           router.push('/login');
+        } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+           // We need to fetch the profile and admin status again
+           await fetchAuthData();
         }
       }
     );
@@ -84,13 +71,14 @@ export function useAuth(): UseAuthReturn {
     return () => {
       subscription.unsubscribe();
     };
-  }, [supabase, router, fetchProfile]);
+  }, [supabase, router, fetchAuthData]);
 
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
       setUser(null);
       setProfile(null);
+      setIsAdmin(false);
       router.push('/login');
     } catch (error) {
       console.error('Sign out error:', error);
@@ -102,8 +90,8 @@ export function useAuth(): UseAuthReturn {
     profile,
     loading,
     signOut,
-    isAdmin: false, // TODO: Implement admin functionality later
-    isClient: true, // Default to client for now
-    refreshProfile,
+    isAdmin,
+    isClient: true,
+    refreshProfile: async () => { await fetchAuthData(); },
   };
 }

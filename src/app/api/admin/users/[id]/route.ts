@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
@@ -6,47 +6,41 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const supabase = createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // Check admin
+  const { data: requester } = await supabase
+    .from('TODO_USERS')
+    .select('is_admin')
+    .eq('id', user.id)
+    .single();
+
+  if (!requester || !(requester as any).is_admin) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
   try {
-    const { id } = params;
-    const { is_active } = await request.json();
+    const body = await request.json();
+    const userId = params.id;
 
-    if (typeof is_active !== 'boolean') {
-      return NextResponse.json(
-        { error: 'is_active must be a boolean' },
-        { status: 400 }
-      );
-    }
-
-    const supabase = createClient();
-
-    // @ts-ignore
-    const { data: user, error } = await supabase
+    const { data: updatedUser, error } = await supabase
       .from('TODO_USERS')
-      .update({ is_active })
-      .eq('id', id)
+      .update(body as never)
+      .eq('id', userId)
       .select()
       .single();
 
-    if (error || !user) {
-      return NextResponse.json(
-        { error: 'Failed to update user' },
-        { status: 500 }
-      );
+    if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({
-      success: true,
-      user: {
-        id: user.id,
-        email: user.email,
-        is_active: user.is_active,
-      },
-    });
-  } catch (error) {
-    console.error('Error updating user:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ user: updatedUser });
+  } catch (e: any) {
+      return NextResponse.json({ error: e.message }, { status: 500 });
   }
 }
