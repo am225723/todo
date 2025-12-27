@@ -24,83 +24,46 @@ export function useAuth(): UseAuthReturn {
   const router = useRouter();
   const supabase = createClient();
 
-  const fetchProfile = useCallback(async (userId: string) => {
-    const { data: profile, error } = await supabase
-      .from('TODO_USER_PROFILES')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
-
-    if (error) {
-      console.error('Error fetching profile:', error);
+  const fetchAuthData = useCallback(async () => {
+    try {
+      const response = await fetch('/api/auth/me');
+      if (response.ok) {
+        const data = await response.json();
+        setUser(data.user);
+        setProfile(data.profile);
+        setIsAdmin(data.isAdmin);
+        return data.user;
+      } else {
+        // If 401 or error, treat as not logged in (or handle error)
+        setUser(null);
+        setProfile(null);
+        setIsAdmin(false);
+        return null;
+      }
+    } catch (error) {
+      console.error('Error fetching auth data:', error);
       return null;
     }
-
-    return profile;
-  }, [supabase]);
-
-  const refreshProfile = async () => {
-    if (user) {
-      const profile = await fetchProfile(user.id);
-      setProfile(profile);
-    }
-  };
+  }, []);
 
   useEffect(() => {
     const initAuth = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        setUser(user);
-
-        if (user) {
-          const profile = await fetchProfile(user.id);
-          setProfile(profile);
-
-          // Check if admin
-          const { data: dbUser } = await supabase
-            .from('TODO_USERS')
-            .select('is_admin')
-            .eq('id', user.id)
-            .single();
-
-          if (dbUser && (dbUser as any).is_admin) {
-             setIsAdmin(true);
-          }
-        }
-      } catch (error) {
-        console.error('Auth initialization error:', error);
-      } finally {
-        setLoading(false);
-      }
+       await fetchAuthData();
+      setLoading(false);
     };
 
     initAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          const profile = await fetchProfile(session.user.id);
-          setProfile(profile);
-
-           // Check if admin
-          const { data: dbUser } = await supabase
-            .from('TODO_USERS')
-            .select('is_admin')
-            .eq('id', session.user.id)
-            .single();
-
-          if (dbUser && (dbUser as any).is_admin) {
-             setIsAdmin(true);
-          }
-        } else {
+        if (event === 'SIGNED_OUT') {
+          setUser(null);
           setProfile(null);
           setIsAdmin(false);
-        }
-
-        if (event === 'SIGNED_OUT') {
           router.push('/login');
+        } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+           // We need to fetch the profile and admin status again
+           await fetchAuthData();
         }
       }
     );
@@ -108,13 +71,14 @@ export function useAuth(): UseAuthReturn {
     return () => {
       subscription.unsubscribe();
     };
-  }, [supabase, router, fetchProfile]);
+  }, [supabase, router, fetchAuthData]);
 
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
       setUser(null);
       setProfile(null);
+      setIsAdmin(false);
       router.push('/login');
     } catch (error) {
       console.error('Sign out error:', error);
@@ -127,7 +91,7 @@ export function useAuth(): UseAuthReturn {
     loading,
     signOut,
     isAdmin,
-    isClient: true, // Default to client for now
-    refreshProfile,
+    isClient: true,
+    refreshProfile: async () => { await fetchAuthData(); },
   };
 }

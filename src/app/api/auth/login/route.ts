@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { verifyPin, validatePinFormat } from '@/lib/auth/pin';
 
 export async function POST(request: NextRequest) {
@@ -21,10 +22,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = createClient();
+    // Use Service Role Client to search users (bypassing RLS)
+    const serviceClient = createServiceClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_SUPABASE_SERVICE_ROLE_KEY!,
+        {
+            auth: {
+                autoRefreshToken: false,
+                persistSession: false
+            }
+        }
+    );
 
-    // Get all active users and find the one with matching PIN
-    const { data: users, error } = await supabase
+    // Get all active users
+    const { data: users, error } = await serviceClient
       .from('TODO_USERS')
       .select('*')
       .eq('is_active', true);
@@ -44,8 +55,6 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
-
-    console.log(`Found ${users.length} active users, checking PIN: ${pin}`);
 
     // Find user with matching PIN
     let validUser = null;
@@ -69,20 +78,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user profile if available
-    const { data: profile } = await supabase
+    // Get user profile if available (using service client)
+    const { data: profile } = await serviceClient
       .from('TODO_USER_PROFILES')
       .select('*')
       .eq('user_id', validUser.id)
       .single();
 
-    // Update last login
-    await supabase
+    // Update last login (using service client)
+    await serviceClient
       .from('TODO_USERS')
       .update({ last_login: new Date().toISOString() })
       .eq('id', validUser.id);
 
-    // Standard Supabase Auth Login with padded password
+    // Standard Supabase Auth Login to set cookies
+    // We use the standard client which is wired to cookies
+    const supabase = createClient();
+
+    // Check if the user exists in Auth (it should)
+    // We perform sign in
     const paddedPin = pin + "00";
     const { error: signInError } = await supabase.auth.signInWithPassword({
         email: validUser.email,
