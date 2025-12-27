@@ -50,10 +50,14 @@ export async function POST(request: NextRequest) {
     // Find user with matching PIN
     let validUser = null;
     for (const user of users) {
-      const isValidPin = await verifyPin(pin, user.pin_hash);
-      if (isValidPin) {
-        validUser = user;
-        break;
+      try {
+          const isValidPin = await verifyPin(pin, user.pin_hash);
+          if (isValidPin) {
+            validUser = user;
+            break;
+          }
+      } catch (e) {
+          console.error("Error verifying pin for user", user.id, e);
       }
     }
 
@@ -77,6 +81,18 @@ export async function POST(request: NextRequest) {
       .from('TODO_USERS')
       .update({ last_login: new Date().toISOString() })
       .eq('id', validUser.id);
+
+    // Standard Supabase Auth Login with padded password
+    const paddedPin = pin + "00";
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: validUser.email,
+        password: paddedPin
+    });
+
+    if (signInError) {
+        console.error('Supabase Auth Sign In Error:', signInError);
+        return NextResponse.json({ error: 'Authentication failed' }, { status: 401 });
+    }
 
     const isAdmin = validUser.is_admin || validUser.role === 'admin';
 

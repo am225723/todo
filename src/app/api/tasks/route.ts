@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  let query = supabase.from('TODO_TASKS').select('*');
+  let query = supabase.from('todo_tasks').select('*');
 
   if (userId) {
     // If requesting tasks for a specific user, ensure the requester is an admin
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     };
 
     const { data: task, error } = await supabase
-      .from('TODO_TASKS')
+      .from('todo_tasks')
       .insert(taskData)
       .select()
       .single();

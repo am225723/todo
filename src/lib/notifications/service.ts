@@ -18,7 +18,7 @@ export async function sendNotification(payload: NotificationPayload) {
 
     console.log(`[MOCK ${payload.type.toUpperCase()}] To: ${payload.recipient} | Msg: ${payload.message}`);
 
-    const { error } = await supabase.from('TODO_NOTIFICATION_LOGS').insert({
+    const { error } = await supabase.from('todo_notification_logs').insert({
         user_id: payload.userId,
         recipient: payload.recipient,
         type: payload.type,
@@ -61,7 +61,7 @@ export async function checkAndSendNotifications() {
         // Fetch pending tasks for today
         const todayStr = now.toISOString().split('T')[0];
         const { data: tasks } = await supabase
-            .from('TODO_TASKS')
+            .from('todo_tasks')
             .select('*')
             .eq('user_id', userData.id)
             .neq('status', 'completed')
