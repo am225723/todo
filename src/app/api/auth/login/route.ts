@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
 
     // Get all active users and find the one with matching PIN
     const { data: users, error } = await supabase
-      .from('todo_users')
+      .from('"TODO_USERS"')
       .select('*')
       .eq('is_active', true);
 
@@ -67,14 +67,14 @@ export async function POST(request: NextRequest) {
 
     // Get user profile if available
     const { data: profile } = await supabase
-      .from('todo_user_profiles')
+      .from('"TODO_USER_PROFILES"')
       .select('*')
       .eq('user_id', validUser.id)
       .single();
 
     // Update last login
     await supabase
-      .from('todo_users')
+      .from('"TODO_USERS"')
       .update({ last_login: new Date().toISOString() })
       .eq('id', validUser.id);
 
