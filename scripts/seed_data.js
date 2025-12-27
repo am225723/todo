@@ -75,7 +75,7 @@ async function seed() {
       ];
 
       for (const task of tasks) {
-          const { error } = await supabase.from('TODO_TASKS').insert(task);
+          const { error } = await supabase.from('todo_tasks').insert(task);
           if (error) console.error('Error inserting task:', error);
           else console.log(`Inserted task: ${task.title}`);
       }

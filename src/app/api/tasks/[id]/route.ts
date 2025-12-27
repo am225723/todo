@@ -19,7 +19,7 @@ export async function PATCH(
 
     // Verify ownership or admin status
     const { data: task } = await supabase
-        .from('TODO_TASKS')
+        .from('todo_tasks')
         .select('user_id')
         .eq('id', taskId)
         .single();
@@ -44,13 +44,13 @@ export async function PATCH(
         }
     }
 
-    // Explicitly cast body to match the Update type for TODO_TASKS
+    // Explicitly cast body to match the Update type for todo_tasks
     const updatePayload: any = { ...body };
     delete updatePayload.id; // Ensure ID is not updated
     delete updatePayload.created_at; // Ensure created_at is not updated
 
     const { data: updatedTask, error } = await supabase
-      .from('TODO_TASKS')
+      .from('todo_tasks')
       .update(updatePayload as never)
       .eq('id', taskId)
       .select()
@@ -81,7 +81,7 @@ export async function DELETE(
 
     // Verify ownership or admin status
     const { data: task } = await supabase
-        .from('TODO_TASKS')
+        .from('todo_tasks')
         .select('user_id')
         .eq('id', taskId)
         .single();
@@ -107,7 +107,7 @@ export async function DELETE(
     }
 
     const { error } = await supabase
-      .from('TODO_TASKS')
+      .from('todo_tasks')
       .delete()
       .eq('id', taskId);
 
