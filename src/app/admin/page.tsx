@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { UserTaskManagement } from '@/components/admin/UserTaskManagement';
 
 interface User {
   id: string;
@@ -18,20 +19,54 @@ interface User {
 }
 
 export default function AdminPage() {
-  const { user, loading } = useAuth();
+  const { user, loading, isAdmin } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserDisplayName, setNewUserDisplayName] = useState('');
   const [newUserPin, setNewUserPin] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [notifLoading, setNotifLoading] = useState(false);
 
-  // Redirect if not admin (for now, allow all authenticated users)
-  useEffect(() => {
-    if (!loading && !user) {
-      window.location.href = '/login';
+  const handleTriggerNotifications = async () => {
+    setNotifLoading(true);
+    try {
+        const response = await fetch('/api/cron/notifications', { method: 'POST' });
+        const data = await response.json();
+        if (response.ok) {
+            toast({
+                title: "Success",
+                description: `Sent ${data.notificationsSent} notifications.`,
+            });
+        } else {
+             throw new Error(data.error);
+        }
+    } catch (error: any) {
+        toast({
+            title: "Error",
+            description: "Failed to trigger notifications: " + error.message,
+            variant: "destructive",
+        });
+    } finally {
+        setNotifLoading(false);
     }
-  }, [user, loading]);
+  };
+
+  useEffect(() => {
+    if (!loading) {
+      if (!user) {
+        window.location.href = '/login';
+      } else if (!isAdmin) {
+        toast({
+            title: "Access Denied",
+            description: "You do not have admin privileges.",
+            variant: "destructive",
+        });
+        window.location.href = '/dashboard';
+      }
+    }
+  }, [user, loading, isAdmin]);
 
   useEffect(() => {
     fetchUsers();
@@ -150,13 +185,30 @@ export default function AdminPage() {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
 
+  if (selectedUser) {
+    return (
+        <div className="container mx-auto py-8 px-4">
+            <UserTaskManagement
+                userId={selectedUser.id}
+                userName={selectedUser.display_name || selectedUser.email}
+                onClose={() => setSelectedUser(null)}
+            />
+        </div>
+    );
+  }
+
   return (
     <div className="container mx-auto py-8 px-4">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">User Management</h1>
-        <p className="text-muted-foreground">
-          Manage users and their access to the to-do list application
-        </p>
+      <div className="mb-8 flex justify-between items-end">
+        <div>
+            <h1 className="text-3xl font-bold mb-2">User Management</h1>
+            <p className="text-muted-foreground">
+            Manage users and their access to the to-do list application
+            </p>
+        </div>
+        <Button onClick={handleTriggerNotifications} disabled={notifLoading}>
+            {notifLoading ? 'Sending...' : 'Trigger Daily Notifications'}
+        </Button>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -236,13 +288,22 @@ export default function AdminPage() {
                         Created: {new Date(user.created_at).toLocaleDateString()}
                       </p>
                     </div>
-                    <Button
-                      variant={user.is_active ? "destructive" : "default"}
-                      size="sm"
-                      onClick={() => handleToggleUserStatus(user.id, user.is_active)}
-                    >
-                      {user.is_active ? "Deactivate" : "Activate"}
-                    </Button>
+                    <div className="flex gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedUser(user)}
+                        >
+                            Tasks
+                        </Button>
+                        <Button
+                        variant={user.is_active ? "destructive" : "default"}
+                        size="sm"
+                        onClick={() => handleToggleUserStatus(user.id, user.is_active)}
+                        >
+                        {user.is_active ? "Deactivate" : "Activate"}
+                        </Button>
+                    </div>
                   </div>
                 ))
               )}
