@@ -25,14 +25,14 @@ export async function POST(request: NextRequest) {
 
     // Get all active users and find the one with matching PIN
     const { data: users, error } = await supabase
-      .from('"TODO_USERS"')
+      .from('TODO_USERS')
       .select('*')
       .eq('is_active', true);
 
     if (error) {
       console.log('Database error:', error);
       return NextResponse.json(
-        { error: 'Database error' },
+        { error: 'Database error', details: error.message },
         { status: 500 }
       );
     }
@@ -67,14 +67,14 @@ export async function POST(request: NextRequest) {
 
     // Get user profile if available
     const { data: profile } = await supabase
-      .from('"TODO_USER_PROFILES"')
+      .from('TODO_USER_PROFILES')
       .select('*')
       .eq('user_id', validUser.id)
       .single();
 
     // Update last login
     await supabase
-      .from('"TODO_USERS"')
+      .from('TODO_USERS')
       .update({ last_login: new Date().toISOString() })
       .eq('id', validUser.id);
 
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Login error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: error.message },
       { status: 500 }
     );
   }

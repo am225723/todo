@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
 
     if (profileError) {
       // Rollback user creation if profile creation fails
-      await supabase.from('TODO_USERS').delete().eq('id', user.id);
+      await supabase.from('TODO_USERS')
       return NextResponse.json(
         { error: 'Failed to create user profile' },
         { status: 500 }
