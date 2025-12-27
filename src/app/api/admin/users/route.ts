@@ -16,9 +16,16 @@ export async function GET(request: NextRequest) {
 
   // Check admin
   // Use Service Client to verify admin status safely avoiding RLS recursion risks
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.NEXT_SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    return NextResponse.json({ error: "Server misconfiguration: Missing Service Role Key" }, { status: 500 });
+  }
+
   const serviceClient = createServiceClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_SUPABASE_SERVICE_ROLE_KEY!,
+      supabaseUrl,
+      serviceRoleKey,
       {
         auth: {
           autoRefreshToken: false,
@@ -70,9 +77,16 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceRoleKey = process.env.NEXT_SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !serviceRoleKey) {
+      return NextResponse.json({ error: "Server misconfiguration: Missing Service Role Key" }, { status: 500 });
+    }
+
     const serviceClient = createServiceClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_SUPABASE_SERVICE_ROLE_KEY!,
+        supabaseUrl,
+        serviceRoleKey,
         {
           auth: {
             autoRefreshToken: false,

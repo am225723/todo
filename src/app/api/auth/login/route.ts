@@ -22,19 +22,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check for required environment variables
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_SUPABASE_SERVICE_ROLE_KEY) {
-        console.error('Missing Supabase environment variables in login route');
-        return NextResponse.json(
-            { error: 'Server configuration error' },
-            { status: 500 }
-        );
+    // Use Service Role Client to search users (bypassing RLS)
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceRoleKey = process.env.NEXT_SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !serviceRoleKey) {
+        console.error("Missing Supabase Service Role credentials");
+        return NextResponse.json({ error: "Server misconfiguration" }, { status: 500 });
     }
 
-    // Use Service Role Client to search users (bypassing RLS)
     const serviceClient = createServiceClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL,
-        process.env.NEXT_SUPABASE_SERVICE_ROLE_KEY,
+        supabaseUrl,
+        serviceRoleKey,
         {
             auth: {
                 autoRefreshToken: false,

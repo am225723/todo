@@ -13,10 +13,18 @@ export async function GET(request: Request) {
       return NextResponse.json({ user: null, profile: null, isAdmin: false }, { status: 401 });
     }
 
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceRoleKey = process.env.NEXT_SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !serviceRoleKey) {
+        console.error("Missing Supabase Service Role credentials in /api/auth/me");
+        return NextResponse.json({ error: "Configuration Error" }, { status: 500 });
+    }
+
     // Use Service Role Key to bypass RLS for fetching user details
     const adminClient = createSupabaseClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_SUPABASE_SERVICE_ROLE_KEY!,
+      supabaseUrl,
+      serviceRoleKey,
       {
         auth: {
           autoRefreshToken: false,
