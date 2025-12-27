@@ -19,6 +19,7 @@ interface UseAuthReturn {
 export function useAuth(): UseAuthReturn {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const supabase = createClient();
@@ -54,6 +55,17 @@ export function useAuth(): UseAuthReturn {
         if (user) {
           const profile = await fetchProfile(user.id);
           setProfile(profile);
+
+          // Check if admin
+          const { data: dbUser } = await supabase
+            .from('TODO_USERS')
+            .select('is_admin')
+            .eq('id', user.id)
+            .single();
+
+          if (dbUser && (dbUser as any).is_admin) {
+             setIsAdmin(true);
+          }
         }
       } catch (error) {
         console.error('Auth initialization error:', error);
@@ -71,8 +83,20 @@ export function useAuth(): UseAuthReturn {
         if (session?.user) {
           const profile = await fetchProfile(session.user.id);
           setProfile(profile);
+
+           // Check if admin
+          const { data: dbUser } = await supabase
+            .from('TODO_USERS')
+            .select('is_admin')
+            .eq('id', session.user.id)
+            .single();
+
+          if (dbUser && (dbUser as any).is_admin) {
+             setIsAdmin(true);
+          }
         } else {
           setProfile(null);
+          setIsAdmin(false);
         }
 
         if (event === 'SIGNED_OUT') {
@@ -102,7 +126,7 @@ export function useAuth(): UseAuthReturn {
     profile,
     loading,
     signOut,
-    isAdmin: false, // TODO: Implement admin functionality later
+    isAdmin,
     isClient: true, // Default to client for now
     refreshProfile,
   };

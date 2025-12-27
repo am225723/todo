@@ -8,6 +8,14 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata: Metadata = {
   title: 'Douglas To-Do App',
   description: 'PIN-based to-do list application with calendar integration',
+  manifest: '/manifest.json',
+};
+
+export const viewport = {
+  themeColor: '#000000',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 export default function RootLayout({

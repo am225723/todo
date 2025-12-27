@@ -78,6 +78,8 @@ export async function POST(request: NextRequest) {
       .update({ last_login: new Date().toISOString() })
       .eq('id', validUser.id);
 
+    const isAdmin = validUser.is_admin || validUser.role === 'admin';
+
     return NextResponse.json({
       success: true,
       user: {
@@ -85,9 +87,10 @@ export async function POST(request: NextRequest) {
         email: validUser.email,
         full_name: validUser.full_name,
         display_name: profile?.display_name || validUser.full_name,
-        role: validUser.role
+        role: validUser.role,
+        is_admin: isAdmin
       },
-      redirect_url: '/dashboard'
+      redirect_url: isAdmin ? '/admin' : '/dashboard'
     });
 
   } catch (error) {

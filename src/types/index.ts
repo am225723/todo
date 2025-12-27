@@ -17,6 +17,7 @@ export interface User {
   created_at: string;
   updated_at: string;
   is_active: boolean;
+  is_admin: boolean;
 }
 
 export interface Category {
@@ -54,6 +55,9 @@ export interface Task {
   sort_order: number;
   created_at: string;
   updated_at: string;
+  is_agent_task: boolean;
+  agent_url: string | null;
+  open_in_new_window: boolean;
 }
 
 export interface TaskCategory {
