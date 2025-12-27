@@ -48,7 +48,7 @@ export function useAuth(): UseAuthReturn {
 
   useEffect(() => {
     const initAuth = async () => {
-      await fetchAuthData();
+       await fetchAuthData();
       setLoading(false);
     };
 
