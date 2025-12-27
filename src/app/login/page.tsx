@@ -72,36 +72,40 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">To-Do List</CardTitle>
-          <CardDescription className="text-center">
-            Enter your PIN to access your tasks
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 opacity-20 z-0" />
+
+      <Card className="w-full max-w-md glass relative z-10 border-none shadow-2xl">
+        <CardHeader className="space-y-3 pb-8">
+          <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-2">
+            <span className="text-2xl">🔐</span>
+          </div>
+          <CardTitle className="text-3xl font-bold text-center tracking-tight">Welcome Back</CardTitle>
+          <CardDescription className="text-center text-base">
+            Enter your secure PIN to access your workspace
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="pin" className="text-center block">Enter Your PIN</Label>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-4">
               <Input
                 id="pin"
                 type="password"
-                placeholder="••••"
+                placeholder="• • • •"
                 value={pin}
                 onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
                 maxLength={6}
-                className="text-center text-3xl tracking-widest font-mono"
+                className="text-center text-4xl tracking-[1em] font-mono h-16 bg-white/50 border-2 focus:border-primary/50 transition-all rounded-xl"
                 autoFocus
               />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Signing in..." : "Sign In"}
+            <Button type="submit" className="w-full h-12 text-lg font-medium shadow-lg hover:shadow-xl transition-all rounded-xl" disabled={loading}>
+              {loading ? "Verifying..." : "Access Dashboard"}
             </Button>
           </form>
           
-          <div className="mt-6 text-center text-sm text-gray-600">
-            Need access? Contact your administrator.
+          <div className="mt-8 text-center text-sm text-muted-foreground">
+            Protected by secure authentication
           </div>
         </CardContent>
       </Card>
