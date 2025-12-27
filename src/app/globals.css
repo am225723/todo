@@ -64,6 +64,9 @@
   .touch-target {
     @apply min-h-[48px] min-w-[48px];
   }
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }
 
 /* Animations */
