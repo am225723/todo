@@ -17,13 +17,23 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function DashboardPage() {
   const { user, profile, loading, isAdmin } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [newTaskTitle, setNewTaskTitle] = useState('');
+
+  // New Task Form State
   const [newTaskOpen, setNewTaskOpen] = useState(false);
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [priority, setPriority] = useState('medium');
+  const [dueDate, setDueDate] = useState('');
+  const [isAgentTask, setIsAgentTask] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -35,7 +45,6 @@ export default function DashboardPage() {
 
   const fetchTasks = async () => {
     try {
-      // Assuming GET /api/tasks fetches tasks for the logged-in user
       const response = await fetch('/api/tasks');
       if (response.ok) {
         const data = await response.json();
@@ -85,26 +94,46 @@ export default function DashboardPage() {
 
   const handleCreateTask = async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!newTaskTitle) return;
+      if (!title) return;
 
       try {
+          const formData = new FormData();
+          formData.append('title', title);
+          formData.append('description', description);
+          formData.append('priority', priority);
+          if (dueDate) formData.append('due_date', dueDate);
+          formData.append('is_agent_task', isAgentTask.toString());
+          if (file) formData.append('file', file);
+
+          // Note: we don't send user_id, the API will handle it based on auth session
+          // or we can send it if needed, but it's safer to let API resolve it.
+          // However, existing code might expect it or use it. API now resolves it.
+
           const response = await fetch('/api/tasks', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                  title: newTaskTitle,
-                  user_id: user?.id,
-                  status: 'pending'
-              })
+              body: formData,
           });
 
           if (response.ok) {
-              setNewTaskTitle('');
+              // Reset form
+              setTitle('');
+              setDescription('');
+              setPriority('medium');
+              setDueDate('');
+              setIsAgentTask(false);
+              setFile(null);
               setNewTaskOpen(false);
               fetchTasks();
               toast({
                   title: "Success",
                   description: "Task added successfully"
+              });
+          } else {
+              const errorData = await response.json();
+              toast({
+                  title: "Error",
+                  description: errorData.error || "Failed to create task",
+                  variant: "destructive"
               });
           }
       } catch (error) {
@@ -125,7 +154,7 @@ export default function DashboardPage() {
 
   const dailyTasks = tasks.filter(t => {
       if (t.status === 'completed') return false;
-      if (!t.due_date) return true; // Treat no due date as "Available Now"
+      if (!t.due_date) return true;
       const due = new Date(t.due_date);
       due.setHours(0,0,0,0);
       return due.getTime() <= today.getTime();
@@ -166,21 +195,78 @@ export default function DashboardPage() {
                       <Plus className="mr-2" /> Add New Task
                   </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                       <DialogTitle>Add New Task</DialogTitle>
                   </DialogHeader>
                   <form onSubmit={handleCreateTask} className="space-y-4">
                       <div className="space-y-2">
-                          <Label htmlFor="taskTitle">Task Title</Label>
+                          <Label htmlFor="title">Task Title</Label>
                           <Input
-                            id="taskTitle"
-                            value={newTaskTitle}
-                            onChange={(e) => setNewTaskTitle(e.target.value)}
+                            id="title"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
                             placeholder="What needs to be done?"
-                            autoFocus
+                            required
                           />
                       </div>
+
+                      <div className="space-y-2">
+                          <Label htmlFor="description">Description</Label>
+                          <Textarea
+                            id="description"
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            placeholder="Add details..."
+                          />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                              <Label htmlFor="priority">Priority</Label>
+                              <Select value={priority} onValueChange={setPriority}>
+                                  <SelectTrigger>
+                                      <SelectValue placeholder="Select priority" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                      <SelectItem value="low">Low</SelectItem>
+                                      <SelectItem value="medium">Medium</SelectItem>
+                                      <SelectItem value="high">High</SelectItem>
+                                      <SelectItem value="urgent">Urgent</SelectItem>
+                                  </SelectContent>
+                              </Select>
+                          </div>
+
+                          <div className="space-y-2">
+                              <Label htmlFor="due_date">Due Date</Label>
+                              <Input
+                                id="due_date"
+                                type="date"
+                                value={dueDate}
+                                onChange={(e) => setDueDate(e.target.value)}
+                              />
+                          </div>
+                      </div>
+
+                      <div className="flex items-center space-x-2 py-2">
+                          <Checkbox
+                            id="is_agent"
+                            checked={isAgentTask}
+                            onCheckedChange={(checked) => setIsAgentTask(!!checked)}
+                          />
+                          <Label htmlFor="is_agent">Is Agent Question?</Label>
+                      </div>
+
+                      <div className="space-y-2">
+                          <Label htmlFor="file">Attachment (Photo or PDF)</Label>
+                          <Input
+                            id="file"
+                            type="file"
+                            accept="image/*,.pdf"
+                            onChange={(e) => setFile(e.target.files?.[0] || null)}
+                          />
+                      </div>
+
                       <Button type="submit" className="w-full">Create Task</Button>
                   </form>
               </DialogContent>

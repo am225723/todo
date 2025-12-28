@@ -13,6 +13,17 @@ export async function PATCH(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  // Get the correct TODO_USERS id
+  const { data: todoUser, error: todoUserError } = await supabase
+      .from('TODO_USERS')
+      .select('id, is_admin')
+      .eq('email', user.email!)
+      .single();
+
+  if (todoUserError || !todoUser) {
+       return NextResponse.json({ error: 'User profile not found' }, { status: 403 });
+  }
+
   try {
     const body = await request.json();
     const taskId = params.id;
@@ -31,15 +42,10 @@ export async function PATCH(
     // Cast task to any to access properties
     const taskData = task as any;
 
-    if (taskData.user_id !== user.id) {
+    const todoUserAny = todoUser as any;
+    if (taskData.user_id !== todoUserAny.id) {
         // Check admin
-        const { data: requester } = await supabase
-            .from('TODO_USERS')
-            .select('is_admin')
-            .eq('id', user.id)
-            .single();
-
-        if (!(requester as any)?.is_admin) {
+        if (!todoUserAny.is_admin) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
     }
@@ -48,6 +54,10 @@ export async function PATCH(
     const updatePayload: any = { ...body };
     delete updatePayload.id; // Ensure ID is not updated
     delete updatePayload.created_at; // Ensure created_at is not updated
+    // Protect user_id update unless admin
+    if (updatePayload.user_id && updatePayload.user_id !== todoUserAny.id && !todoUserAny.is_admin) {
+        delete updatePayload.user_id;
+    }
 
     const { data: updatedTask, error } = await supabase
       .from('todo_tasks')
@@ -77,6 +87,17 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Get the correct TODO_USERS id
+    const { data: todoUser, error: todoUserError } = await supabase
+      .from('TODO_USERS')
+      .select('id, is_admin')
+      .eq('email', user.email!)
+      .single();
+
+    if (todoUserError || !todoUser) {
+        return NextResponse.json({ error: 'User profile not found' }, { status: 403 });
+    }
+
     const taskId = params.id;
 
     // Verify ownership or admin status
@@ -93,15 +114,10 @@ export async function DELETE(
     // Cast task to any to access properties
     const taskData = task as any;
 
-    if (taskData.user_id !== user.id) {
+    const todoUserAny = todoUser as any;
+    if (taskData.user_id !== todoUserAny.id) {
         // Check admin
-        const { data: requester } = await supabase
-            .from('TODO_USERS')
-            .select('is_admin')
-            .eq('id', user.id)
-            .single();
-
-        if (!(requester as any)?.is_admin) {
+        if (!todoUserAny.is_admin) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
     }
