@@ -73,9 +73,12 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 opacity-20 z-0" />
+      <div className="absolute inset-0 bg-gradient-to-br from-teal-500 via-green-500 to-emerald-500 opacity-20 z-0" />
+      <div className="logo-container absolute top-10">
+        <img src="/logo.png" alt="Integrative Psychiatry" className="logo-image h-32 w-auto" />
+      </div>
 
-      <Card className="w-full max-w-md glass relative z-10 border-none shadow-2xl">
+      <Card className="w-full max-w-md glass relative z-10 border-none shadow-2xl mt-20">
         <CardHeader className="space-y-3 pb-8">
           <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-2">
             <span className="text-2xl">🔐</span>
