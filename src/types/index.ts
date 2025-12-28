@@ -58,6 +58,8 @@ export interface Task {
   is_agent_task: boolean;
   agent_url: string | null;
   open_in_new_window: boolean;
+  attachment_url: string | null;
+  attachment_type: 'image' | 'pdf' | null;
 }
 
 export interface TaskCategory {
