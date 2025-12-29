@@ -41,10 +41,20 @@ export async function GET(request: Request) {
     }));
 
     // 2. Fetch external calendar sources
-    const { data: sources } = await supabase
+    const { data: sources, error: sourcesError } = await supabase
         .from('todo_calendar_sources')
         .select('*')
         .eq('user_id', userId);
+
+    if (sourcesError) {
+        if (sourcesError.code === '42P01') {
+             // Return just internal events if calendar source table is missing,
+             // but log error or maybe include a warning flag in response?
+             // For now, let's just return internal events to keep the UI working partially.
+             console.error("Calendar sources table missing (42P01). Returning only internal tasks.");
+             return NextResponse.json({ events: internalEvents });
+        }
+    }
 
     let externalEvents: any[] = [];
 

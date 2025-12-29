@@ -28,6 +28,12 @@ export async function GET(request: Request) {
         .order('created_at', { ascending: false });
 
     if (error) {
+        // Handle "relation does not exist" error gracefully
+        if (error.code === '42P01') {
+            return NextResponse.json({
+                error: "Database table 'todo_calendar_sources' missing. Please run calendar_setup.sql in Supabase."
+            }, { status: 503 });
+        }
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
@@ -59,8 +65,7 @@ export async function POST(request: Request) {
         const { name, url, type, color } = body;
 
         // Force casting to "any" to bypass the strict type checking if the generated types
-        // in supabase/ssr are not picking up the local 'Database' interface correctly,
-        // or if there is a mismatch I cannot see.
+        // in supabase/ssr are not picking up the local 'Database' interface correctly.
         const { data: source, error } = await (supabase
             .from('todo_calendar_sources') as any)
             .insert({
@@ -74,6 +79,11 @@ export async function POST(request: Request) {
             .single();
 
         if (error) {
+            if (error.code === '42P01') {
+                return NextResponse.json({
+                    error: "Database table 'todo_calendar_sources' missing. Please run calendar_setup.sql in Supabase."
+                }, { status: 503 });
+            }
             return NextResponse.json({ error: error.message }, { status: 500 });
         }
 

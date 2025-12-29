@@ -33,7 +33,13 @@ BEGIN
 END $$;
 ```
 
-## 2. Storage Setup
+## 2. Calendar Setup (New)
+
+To enable the Calendar feature, you **must** run the SQL contained in the `calendar_setup.sql` file in your Supabase SQL Editor.
+
+This creates the `todo_calendar_sources` table and sets up the necessary security policies.
+
+## 3. Storage Setup
 
 1.  Go to the **Storage** section in your Supabase Dashboard.
 2.  Create a new bucket named `task-attachments`.
@@ -59,6 +65,6 @@ TO authenticated
 USING ( bucket_id = 'task-attachments' );
 ```
 
-## 3. Edge Functions
+## 4. Edge Functions
 
 No new Edge Functions are required for this update. The logic is handled within the Next.js API Routes (`src/app/api/tasks/route.ts`).
