@@ -29,6 +29,7 @@ export function UserTaskManagement({ userId, userName, onClose }: UserTaskManage
   const [isAgentTask, setIsAgentTask] = useState(false);
   const [agentUrl, setAgentUrl] = useState('');
   const [openInNewWindow, setOpenInNewWindow] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
 
   useEffect(() => {
     fetchTasks();
@@ -58,22 +59,21 @@ export function UserTaskManagement({ userId, userName, onClose }: UserTaskManage
     e.preventDefault();
 
     try {
+      const formData = new FormData();
+      formData.append('user_id', userId);
+      formData.append('title', title);
+      formData.append('description', description);
+      formData.append('priority', priority);
+      if (dueDate) formData.append('due_date', dueDate);
+      formData.append('is_agent_task', isAgentTask.toString());
+      if (isAgentTask && agentUrl) formData.append('agent_url', agentUrl);
+      if (isAgentTask) formData.append('open_in_new_window', openInNewWindow.toString());
+      if (file) formData.append('file', file);
+      formData.append('status', 'pending');
+
       const response = await fetch('/api/tasks', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user_id: userId,
-          title,
-          description,
-          priority,
-          due_date: dueDate || null,
-          is_agent_task: isAgentTask,
-          agent_url: isAgentTask ? agentUrl : null,
-          open_in_new_window: isAgentTask ? openInNewWindow : false,
-          status: 'pending'
-        }),
+        body: formData,
       });
 
       if (response.ok) {
@@ -89,6 +89,7 @@ export function UserTaskManagement({ userId, userName, onClose }: UserTaskManage
         setIsAgentTask(false);
         setAgentUrl('');
         setOpenInNewWindow(false);
+        setFile(null);
 
         fetchTasks();
       } else {
@@ -195,6 +196,16 @@ export function UserTaskManagement({ userId, userName, onClose }: UserTaskManage
                     </div>
                   </>
                 )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="file">Attachment (Photo or PDF)</Label>
+                <Input
+                  id="file"
+                  type="file"
+                  accept="image/*,.pdf"
+                  onChange={(e) => setFile(e.target.files?.[0] || null)}
+                />
               </div>
 
               <Button type="submit" className="w-full">Assign Task</Button>

@@ -6,8 +6,8 @@ import { Toaster } from '@/components/ui/toaster';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Douglas To-Do App',
-  description: 'PIN-based to-do list application with calendar integration',
+  title: 'Integrative Psychiatry',
+  description: 'Task management for Integrative Psychiatry',
   manifest: '/manifest.json',
 };
 

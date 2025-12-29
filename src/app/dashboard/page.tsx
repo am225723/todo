@@ -6,6 +6,7 @@ import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { Task } from '@/types';
 import { TaskList } from '@/components/dashboard/TaskList';
+import { CalendarView } from '@/components/dashboard/CalendarView';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus } from 'lucide-react';
 import {
@@ -33,6 +34,8 @@ export default function DashboardPage() {
   const [priority, setPriority] = useState('medium');
   const [dueDate, setDueDate] = useState('');
   const [isAgentTask, setIsAgentTask] = useState(false);
+  const [agentUrl, setAgentUrl] = useState('');
+  const [openInNewWindow, setOpenInNewWindow] = useState(false);
   const [file, setFile] = useState<File | null>(null);
 
   useEffect(() => {
@@ -103,6 +106,8 @@ export default function DashboardPage() {
           formData.append('priority', priority);
           if (dueDate) formData.append('due_date', dueDate);
           formData.append('is_agent_task', isAgentTask.toString());
+          if (isAgentTask && agentUrl) formData.append('agent_url', agentUrl);
+          if (isAgentTask) formData.append('open_in_new_window', openInNewWindow.toString());
           if (file) formData.append('file', file);
 
           // Note: we don't send user_id, the API will handle it based on auth session
@@ -121,6 +126,8 @@ export default function DashboardPage() {
               setPriority('medium');
               setDueDate('');
               setIsAgentTask(false);
+              setAgentUrl('');
+              setOpenInNewWindow(false);
               setFile(null);
               setNewTaskOpen(false);
               fetchTasks();
@@ -172,20 +179,31 @@ export default function DashboardPage() {
 
   return (
     <div className="container mx-auto py-8 px-4 pb-20">
-      <div className="flex justify-between items-center mb-8">
+      <div className="logo-container">
+        <img src="/logo.png" alt="Integrative Psychiatry" className="logo-image" />
+      </div>
+      <div className="flex justify-between items-center mb-8 glass p-6 rounded-2xl">
         <div>
-            <h1 className="text-3xl font-bold mb-2">
+            <h1 className="text-3xl font-bold mb-2 text-primary">
             Hello, {profile?.display_name || user?.email?.split('@')[0]}!
             </h1>
             <p className="text-muted-foreground">
             Let&apos;s get things done.
             </p>
         </div>
-        {isAdmin && (
-            <Button variant="outline" onClick={() => window.location.href = '/admin'}>
-                Admin Dashboard
+        <div className="flex items-center gap-2">
+            {isAdmin && (
+                <Button variant="outline" onClick={() => window.location.href = '/admin'}>
+                    Admin Dashboard
+                </Button>
+            )}
+            <Button variant="destructive" onClick={async () => {
+                await fetch('/api/auth/logout', { method: 'POST' });
+                window.location.href = '/login';
+            }}>
+                Logout
             </Button>
-        )}
+        </div>
       </div>
 
       <div className="mb-6">
@@ -248,13 +266,36 @@ export default function DashboardPage() {
                           </div>
                       </div>
 
-                      <div className="flex items-center space-x-2 py-2">
+                      <div className="space-y-4 border p-4 rounded-md">
+                        <div className="flex items-center space-x-2">
                           <Checkbox
                             id="is_agent"
                             checked={isAgentTask}
                             onCheckedChange={(checked) => setIsAgentTask(!!checked)}
                           />
-                          <Label htmlFor="is_agent">Is Agent Question?</Label>
+                          <Label htmlFor="is_agent">Is Agent Task?</Label>
+                        </div>
+                        {isAgentTask && (
+                          <>
+                            <div className="space-y-2">
+                              <Label htmlFor="agentUrl">Agent URL</Label>
+                              <Input
+                                id="agentUrl"
+                                value={agentUrl}
+                                onChange={(e) => setAgentUrl(e.target.value)}
+                                placeholder="https://..."
+                              />
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id="openInNewWindow"
+                                checked={openInNewWindow}
+                                onCheckedChange={(c) => setOpenInNewWindow(!!c)}
+                              />
+                              <Label htmlFor="openInNewWindow">Open in new window</Label>
+                            </div>
+                          </>
+                        )}
                       </div>
 
                       <div className="space-y-2">
@@ -274,10 +315,11 @@ export default function DashboardPage() {
       </div>
 
       <Tabs defaultValue="today" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-6">
+        <TabsList className="grid w-full grid-cols-4 mb-6">
           <TabsTrigger value="today">Today</TabsTrigger>
           <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
           <TabsTrigger value="completed">Completed</TabsTrigger>
+          <TabsTrigger value="calendar">Calendar</TabsTrigger>
         </TabsList>
 
         <TabsContent value="today">
@@ -302,6 +344,10 @@ export default function DashboardPage() {
                 tasks={completedTasks}
                 onToggleStatus={handleToggleStatus}
             />
+        </TabsContent>
+
+        <TabsContent value="calendar">
+            <CalendarView />
         </TabsContent>
       </Tabs>
     </div>
