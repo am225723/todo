@@ -102,6 +102,17 @@ export interface NotificationLog {
   created_at: string;
 }
 
+export interface CalendarSource {
+  id: string;
+  user_id: string;
+  name: string;
+  url: string;
+  type: string;
+  color: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -149,6 +160,11 @@ export interface Database {
         Row: NotificationLog;
         Insert: Omit<NotificationLog, 'id' | 'created_at'>;
         Update: Partial<Omit<NotificationLog, 'id' | 'created_at'>>;
+      };
+      todo_calendar_sources: {
+        Row: CalendarSource;
+        Insert: Omit<CalendarSource, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<CalendarSource, 'id' | 'created_at' | 'updated_at'>>;
       };
     };
   };
