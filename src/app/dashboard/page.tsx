@@ -6,6 +6,7 @@ import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { Task } from '@/types';
 import { TaskList } from '@/components/dashboard/TaskList';
+import { CalendarView } from '@/components/dashboard/CalendarView';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus } from 'lucide-react';
 import {
@@ -314,10 +315,11 @@ export default function DashboardPage() {
       </div>
 
       <Tabs defaultValue="today" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-6">
+        <TabsList className="grid w-full grid-cols-4 mb-6">
           <TabsTrigger value="today">Today</TabsTrigger>
           <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
           <TabsTrigger value="completed">Completed</TabsTrigger>
+          <TabsTrigger value="calendar">Calendar</TabsTrigger>
         </TabsList>
 
         <TabsContent value="today">
@@ -342,6 +344,10 @@ export default function DashboardPage() {
                 tasks={completedTasks}
                 onToggleStatus={handleToggleStatus}
             />
+        </TabsContent>
+
+        <TabsContent value="calendar">
+            <CalendarView />
         </TabsContent>
       </Tabs>
     </div>
