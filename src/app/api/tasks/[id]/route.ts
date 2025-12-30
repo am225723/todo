@@ -2,6 +2,34 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
+function calculateNextDueDate(currentDateStr: string | null, pattern: any): string {
+    const date = currentDateStr ? new Date(currentDateStr) : new Date();
+
+    // Default to tomorrow if no pattern
+    if (!pattern || !pattern.type) {
+        date.setDate(date.getDate() + 1);
+        return date.toISOString();
+    }
+
+    const interval = parseInt(pattern.interval) || 1;
+
+    switch (pattern.type) {
+        case 'daily':
+            date.setDate(date.getDate() + interval);
+            break;
+        case 'weekly':
+            date.setDate(date.getDate() + (7 * interval));
+            break;
+        case 'monthly':
+            date.setMonth(date.getMonth() + interval);
+            break;
+        default:
+             date.setDate(date.getDate() + 1);
+    }
+
+    return date.toISOString();
+}
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -31,7 +59,7 @@ export async function PATCH(
     // Verify ownership or admin status
     const { data: task } = await supabase
         .from('todo_tasks')
-        .select('user_id')
+        .select('*') // Select all to check recurrence
         .eq('id', taskId)
         .single();
 
@@ -41,13 +69,36 @@ export async function PATCH(
 
     // Cast task to any to access properties
     const taskData = task as any;
-
     const todoUserAny = todoUser as any;
+
     if (taskData.user_id !== todoUserAny.id) {
         // Check admin
         if (!todoUserAny.is_admin) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
+    }
+
+    // Handle Recurrence: If completing a recurring task, create the next one
+    if (body.status === 'completed' && taskData.status !== 'completed' && taskData.is_recurring) {
+        const nextDueDate = calculateNextDueDate(taskData.due_date, taskData.recurrence_pattern);
+
+        const newTask = {
+            ...taskData,
+            id: undefined, // Let DB generate ID
+            created_at: undefined,
+            updated_at: undefined,
+            status: 'pending',
+            due_date: nextDueDate,
+            // Keep recurrence settings
+            is_recurring: true,
+            recurrence_pattern: taskData.recurrence_pattern
+        };
+        delete newTask.id;
+        delete newTask.created_at;
+        delete newTask.updated_at;
+
+        // Insert new task
+        await supabase.from('todo_tasks').insert(newTask);
     }
 
     // Explicitly cast body to match the Update type for todo_tasks
@@ -72,6 +123,7 @@ export async function PATCH(
 
     return NextResponse.json({ task: updatedTask });
   } catch (error) {
+    console.error("Task update error", error);
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   }
 }

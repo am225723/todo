@@ -12,7 +12,7 @@ export default function LoginPage() {
   const router = useRouter();
 
   const handlePinClick = (digit: string) => {
-    if (pin.length < 6) {
+    if (pin.length < 4) {
       setPin(prev => prev + digit);
     }
   };
@@ -25,30 +25,12 @@ export default function LoginPage() {
     setPin('');
   };
 
-  useEffect(() => {
-    const submitLogin = async () => {
-        if (pin.length >= 4) {
-             // Optional: Auto-submit on 4 or 6 digits?
-             // The previous implementation required a button click.
-             // Let's keep manual submission or add a specific submit button,
-             // but usually "fancy" pin pads auto-submit or have a clear enter button.
-             // Given the variable length 4-6, we probably need an enter button or wait for 6?
-             // The memory says "4-digit PINs which are padded with '00' suffix".
-             // The user enters 4-6 digits.
-             // Let's stick to a manual enter button for clarity, or auto-submit if 6?
-             // Let's provide a "Go" button that appears when valid.
-        }
-    };
-    submitLogin();
-  }, [pin]);
-
-
   const handleSubmit = async () => {
     if (!pin) return;
-    if (pin.length < 4) {
+    if (pin.length !== 4) {
         toast({
             title: "Invalid PIN",
-            description: "PIN must be at least 4 digits",
+            description: "PIN must be 4 digits",
             variant: "destructive"
         });
         return;
@@ -131,12 +113,12 @@ export default function LoginPage() {
               <img src="/logo.png" alt="Logo" className="w-12 h-12 brightness-0 invert" />
             </motion.div>
             <h1 className="text-3xl font-bold text-white tracking-tight">Welcome Back</h1>
-            <p className="text-zinc-400">Enter your secure PIN</p>
+            <p className="text-zinc-400">Enter your 4-digit PIN</p>
           </div>
 
           {/* PIN Dots */}
           <div className="flex gap-4 h-8 justify-center items-center mb-8">
-            {[...Array(6)].map((_, i) => (
+            {[...Array(4)].map((_, i) => (
               <motion.div
                 key={i}
                 initial={false}
@@ -168,7 +150,7 @@ export default function LoginPage() {
 
           {/* Submit Button */}
           <AnimatePresence>
-            {pin.length >= 4 && (
+            {pin.length === 4 && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
