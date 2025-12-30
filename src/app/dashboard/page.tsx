@@ -346,7 +346,44 @@ export default function DashboardPage() {
                                 onChange={(e) => setDueDate(e.target.value)}
                                 className="bg-slate-50"
                               />
+                              <Label htmlFor="is_recurring" className="font-medium cursor-pointer">Repeat Task?</Label>
                           </div>
+                          <AnimatePresence>
+                              {isRecurring && (
+                                  <motion.div
+                                      initial={{ height: 0, opacity: 0 }}
+                                      animate={{ height: 'auto', opacity: 1 }}
+                                      exit={{ height: 0, opacity: 0 }}
+                                      className="space-y-3 pl-6 pt-2 overflow-hidden"
+                                  >
+                                      <div className="grid grid-cols-2 gap-3">
+                                          <div>
+                                              <Label className="text-xs text-muted-foreground">Frequency</Label>
+                                              <Select value={recurrenceType} onValueChange={setRecurrenceType}>
+                                                  <SelectTrigger className="h-8 text-xs bg-white">
+                                                      <SelectValue />
+                                                  </SelectTrigger>
+                                                  <SelectContent>
+                                                      <SelectItem value="daily">Daily</SelectItem>
+                                                      <SelectItem value="weekly">Weekly</SelectItem>
+                                                      <SelectItem value="monthly">Monthly</SelectItem>
+                                                  </SelectContent>
+                                              </Select>
+                                          </div>
+                                          <div>
+                                              <Label className="text-xs text-muted-foreground">Interval</Label>
+                                              <Input
+                                                  type="number"
+                                                  min="1"
+                                                  value={recurrenceInterval}
+                                                  onChange={(e) => setRecurrenceInterval(e.target.value)}
+                                                  className="h-8 text-xs bg-white"
+                                              />
+                                          </div>
+                                      </div>
+                                  </motion.div>
+                              )}
+                          </AnimatePresence>
                       </div>
 
                       {/* Recurrence Options */}
