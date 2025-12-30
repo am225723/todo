@@ -8,7 +8,7 @@ import { Task } from '@/types';
 import { TaskList } from '@/components/dashboard/TaskList';
 import { CalendarView } from '@/components/dashboard/CalendarView';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, LayoutDashboard, Calendar as CalendarIcon, CheckCircle2, ListTodo, LogOut } from 'lucide-react';
+import { Plus, LayoutDashboard, Calendar as CalendarIcon, CheckCircle2, ListTodo, LogOut, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Dialog,
@@ -23,6 +23,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function DashboardPage() {
   const { user, profile, loading, isAdmin } = useAuth();
@@ -89,8 +97,6 @@ export default function DashboardPage() {
             title: "Task Completed",
             description: "Great job keeping up!",
         });
-        // If it was a recurring task, we should re-fetch to see the new task
-        // But for now, let's just wait or re-fetch silently
         fetchTasks();
       }
     } catch (error) {
@@ -113,6 +119,7 @@ export default function DashboardPage() {
           formData.append('title', title);
           formData.append('description', description);
           formData.append('priority', priority);
+          // dueDate is now likely a datetime string (YYYY-MM-DDTHH:mm) which works with ISO
           if (dueDate) formData.append('due_date', dueDate);
           formData.append('is_agent_task', isAgentTask.toString());
           if (isAgentTask && agentUrl) formData.append('agent_url', agentUrl);
@@ -179,11 +186,22 @@ export default function DashboardPage() {
     );
   }
 
+  // Task Filtering Logic
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const dailyTasks = tasks.filter(t => {
+  // Active tasks for today (due today or overdue)
+  const activeDailyTasks = tasks.filter(t => {
       if (t.status === 'completed') return false;
+      if (!t.due_date) return true;
+      const due = new Date(t.due_date);
+      due.setHours(0,0,0,0);
+      return due.getTime() <= today.getTime();
+  });
+
+  // Completed tasks for today (due today or overdue)
+  const completedDailyTasks = tasks.filter(t => {
+      if (t.status !== 'completed') return false;
       if (!t.due_date) return true;
       const due = new Date(t.due_date);
       due.setHours(0,0,0,0);
@@ -198,7 +216,7 @@ export default function DashboardPage() {
       return due.getTime() > today.getTime();
   });
 
-  const completedTasks = tasks.filter(t => t.status === 'completed');
+  const allCompletedTasks = tasks.filter(t => t.status === 'completed');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 pb-24">
@@ -226,18 +244,32 @@ export default function DashboardPage() {
                        <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">{profile?.display_name || user?.email?.split('@')[0]}</p>
                        <p className="text-xs text-slate-500">{isAdmin ? 'Administrator' : 'Client'}</p>
                    </div>
-                   <Avatar className="h-10 w-10 border-2 border-white shadow-sm cursor-pointer hover:scale-105 transition-transform">
-                       <AvatarImage src={profile?.avatar_url || ''} />
-                       <AvatarFallback className="bg-indigo-100 text-indigo-700">
-                            {user?.email?.substring(0,2).toUpperCase()}
-                       </AvatarFallback>
-                   </Avatar>
-                   <Button variant="ghost" size="icon" onClick={async () => {
-                        await fetch('/api/auth/logout', { method: 'POST' });
-                        window.location.href = '/login';
-                   }}>
-                       <LogOut className="w-5 h-5 text-slate-500 hover:text-red-500" />
-                   </Button>
+
+                   <DropdownMenu>
+                       <DropdownMenuTrigger asChild>
+                           <Avatar className="h-10 w-10 border-2 border-white shadow-sm cursor-pointer hover:scale-105 transition-transform">
+                               <AvatarImage src={profile?.avatar_url || ''} />
+                               <AvatarFallback className="bg-indigo-100 text-indigo-700 font-bold">
+                                    {profile?.display_name
+                                        ? profile.display_name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase()
+                                        : user?.email?.substring(0,2).toUpperCase()}
+                               </AvatarFallback>
+                           </Avatar>
+                       </DropdownMenuTrigger>
+                       <DropdownMenuContent align="end" className="w-56">
+                           <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                           <DropdownMenuSeparator />
+                           <DropdownMenuItem onClick={() => toast({ title: "Coming Soon", description: "Profile settings are under construction." })}>
+                               <User className="mr-2 h-4 w-4" /> Profile
+                           </DropdownMenuItem>
+                           <DropdownMenuItem className="text-red-600" onClick={async () => {
+                                await fetch('/api/auth/logout', { method: 'POST' });
+                                window.location.href = '/login';
+                           }}>
+                               <LogOut className="mr-2 h-4 w-4" /> Log out
+                           </DropdownMenuItem>
+                       </DropdownMenuContent>
+                   </DropdownMenu>
               </div>
           </div>
       </div>
@@ -250,7 +282,7 @@ export default function DashboardPage() {
         >
             <div>
                 <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-800 to-slate-600 dark:from-white dark:to-slate-400">
-                    Welcome Back
+                    Welcome Back, {profile?.display_name?.split(' ')[0] || 'Friend'}
                 </h2>
                 <p className="text-slate-500 mt-1">Here&apos;s what&apos;s on your plate today.</p>
             </div>
@@ -306,15 +338,52 @@ export default function DashboardPage() {
                           </div>
 
                           <div className="space-y-2">
-                              <Label htmlFor="due_date">Due Date</Label>
+                              <Label htmlFor="due_date">Due By</Label>
                               <Input
                                 id="due_date"
-                                type="date"
+                                type="datetime-local"
                                 value={dueDate}
                                 onChange={(e) => setDueDate(e.target.value)}
                                 className="bg-slate-50"
                               />
+                              <Label htmlFor="is_recurring" className="font-medium cursor-pointer">Repeat Task?</Label>
                           </div>
+                          <AnimatePresence>
+                              {isRecurring && (
+                                  <motion.div
+                                      initial={{ height: 0, opacity: 0 }}
+                                      animate={{ height: 'auto', opacity: 1 }}
+                                      exit={{ height: 0, opacity: 0 }}
+                                      className="space-y-3 pl-6 pt-2 overflow-hidden"
+                                  >
+                                      <div className="grid grid-cols-2 gap-3">
+                                          <div>
+                                              <Label className="text-xs text-muted-foreground">Frequency</Label>
+                                              <Select value={recurrenceType} onValueChange={setRecurrenceType}>
+                                                  <SelectTrigger className="h-8 text-xs bg-white">
+                                                      <SelectValue />
+                                                  </SelectTrigger>
+                                                  <SelectContent>
+                                                      <SelectItem value="daily">Daily</SelectItem>
+                                                      <SelectItem value="weekly">Weekly</SelectItem>
+                                                      <SelectItem value="monthly">Monthly</SelectItem>
+                                                  </SelectContent>
+                                              </Select>
+                                          </div>
+                                          <div>
+                                              <Label className="text-xs text-muted-foreground">Interval</Label>
+                                              <Input
+                                                  type="number"
+                                                  min="1"
+                                                  value={recurrenceInterval}
+                                                  onChange={(e) => setRecurrenceInterval(e.target.value)}
+                                                  className="h-8 text-xs bg-white"
+                                              />
+                                          </div>
+                                      </div>
+                                  </motion.div>
+                              )}
+                          </AnimatePresence>
                       </div>
 
                       {/* Recurrence Options */}
@@ -434,7 +503,7 @@ export default function DashboardPage() {
                         <ListTodo className="w-4 h-4 mr-2" /> Upcoming
                     </TabsTrigger>
                     <TabsTrigger value="completed" className="rounded-full px-6 data-[state=active]:bg-indigo-600 data-[state=active]:text-white transition-all">
-                        <CheckCircle2 className="w-4 h-4 mr-2" /> Done
+                        <CheckCircle2 className="w-4 h-4 mr-2" /> All Done
                     </TabsTrigger>
                     <TabsTrigger value="calendar" className="rounded-full px-6 data-[state=active]:bg-indigo-600 data-[state=active]:text-white transition-all">
                         <CalendarIcon className="w-4 h-4 mr-2" /> Calendar
@@ -452,9 +521,22 @@ export default function DashboardPage() {
                     >
                         <TaskList
                             title="Today's Focus"
-                            tasks={dailyTasks}
+                            tasks={activeDailyTasks}
                             onToggleStatus={handleToggleStatus}
                         />
+
+                        {completedDailyTasks.length > 0 && (
+                            <div className="mt-8">
+                                <h3 className="text-sm font-semibold text-slate-500 mb-4 px-1 uppercase tracking-wider flex items-center">
+                                    <CheckCircle2 className="w-4 h-4 mr-2" /> Completed Today
+                                </h3>
+                                <TaskList
+                                    title=""
+                                    tasks={completedDailyTasks}
+                                    onToggleStatus={handleToggleStatus}
+                                />
+                            </div>
+                        )}
                     </motion.div>
                 </TabsContent>
 
@@ -481,8 +563,8 @@ export default function DashboardPage() {
                         transition={{ duration: 0.3 }}
                     >
                         <TaskList
-                            title="Accomplishments"
-                            tasks={completedTasks}
+                            title="History of Accomplishments"
+                            tasks={allCompletedTasks}
                             onToggleStatus={handleToggleStatus}
                         />
                     </motion.div>
