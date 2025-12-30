@@ -6,12 +6,13 @@ import { format, parse, startOfWeek, getDay } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from '@/hooks/use-toast';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Calendar as CalendarIcon, ExternalLink } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const locales = {
   'en-US': enUS,
@@ -37,6 +38,10 @@ export function CalendarView() {
     const [events, setEvents] = useState<any[]>([]);
     const [sources, setSources] = useState<CalendarSource[]>([]);
     const [isManageOpen, setIsManageOpen] = useState(false);
+
+    // Event Details Modal
+    const [selectedEvent, setSelectedEvent] = useState<any>(null);
+    const [isEventDetailsOpen, setIsEventDetailsOpen] = useState(false);
 
     // New Source Form
     const [newName, setNewName] = useState('');
@@ -120,6 +125,11 @@ export function CalendarView() {
         }
     };
 
+    const handleSelectEvent = (event: any) => {
+        setSelectedEvent(event);
+        setIsEventDetailsOpen(true);
+    };
+
     const eventStyleGetter = (event: any) => {
         let backgroundColor = '#3174ad';
         if (event.resource?.type === 'task') {
@@ -136,47 +146,55 @@ export function CalendarView() {
         return {
             style: {
                 backgroundColor,
-                borderRadius: '4px',
-                opacity: 0.8,
+                borderRadius: '6px',
+                opacity: 0.9,
                 color: 'white',
                 border: '0px',
-                display: 'block'
+                display: 'block',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                padding: '2px 5px',
+                fontSize: '0.85rem'
             }
         };
     };
 
     return (
-        <div className="h-[800px] p-4 bg-white/50 backdrop-blur-sm rounded-xl border shadow-sm">
-            <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold text-primary">Calendar</h2>
+        <div className="h-[800px] p-6 bg-white/40 backdrop-blur-xl rounded-3xl border border-white/20 shadow-2xl">
+            <div className="flex justify-between items-center mb-6">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 bg-indigo-500/10 rounded-xl">
+                        <CalendarIcon className="w-6 h-6 text-indigo-600" />
+                    </div>
+                    <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-violet-600">Calendar</h2>
+                </div>
                 <Dialog open={isManageOpen} onOpenChange={setIsManageOpen}>
                     <DialogTrigger asChild>
-                        <Button variant="outline">Manage Calendars</Button>
+                        <Button variant="outline" className="border-indigo-200 text-indigo-700 hover:bg-indigo-50">Manage Calendars</Button>
                     </DialogTrigger>
-                    <DialogContent>
+                    <DialogContent className="sm:max-w-[500px]">
                         <DialogHeader>
                             <DialogTitle>Manage Calendar Sources</DialogTitle>
                         </DialogHeader>
 
-                        <div className="space-y-4">
-                            <form onSubmit={handleAddSource} className="space-y-4 border p-4 rounded-md">
-                                <h3 className="font-medium">Add New Calendar</h3>
+                        <div className="space-y-6">
+                            <form onSubmit={handleAddSource} className="space-y-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                <h3 className="font-semibold text-sm uppercase text-slate-500 tracking-wider">Add New Calendar</h3>
                                 <div className="space-y-2">
                                     <Label>Name</Label>
-                                    <Input value={newName} onChange={e => setNewName(e.target.value)} placeholder="My Google Calendar" required />
+                                    <Input value={newName} onChange={e => setNewName(e.target.value)} placeholder="My Google Calendar" required className="bg-white" />
                                 </div>
                                 <div className="space-y-2">
                                     <Label>iCal URL</Label>
-                                    <Input value={newUrl} onChange={e => setNewUrl(e.target.value)} placeholder="https://calendar.google.com/..." required />
+                                    <Input value={newUrl} onChange={e => setNewUrl(e.target.value)} placeholder="https://calendar.google.com/..." required className="bg-white" />
                                     <p className="text-xs text-muted-foreground">
                                         For Google Calendar: Settings &gt; Integrate calendar &gt; Secret address in iCal format
                                     </p>
                                 </div>
-                                <div className="grid grid-cols-2 gap-2">
+                                <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <Label>Type</Label>
                                         <Select value={newType} onValueChange={setNewType}>
-                                            <SelectTrigger>
+                                            <SelectTrigger className="bg-white">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -187,24 +205,29 @@ export function CalendarView() {
                                     </div>
                                     <div className="space-y-2">
                                         <Label>Color</Label>
-                                        <Input type="color" value={newColor} onChange={e => setNewColor(e.target.value)} className="h-10" />
+                                        <div className="flex items-center gap-2">
+                                            <Input type="color" value={newColor} onChange={e => setNewColor(e.target.value)} className="h-10 w-20 p-1 bg-white" />
+                                            <span className="text-xs text-muted-foreground">{newColor}</span>
+                                        </div>
                                     </div>
                                 </div>
-                                <Button type="submit" className="w-full">Add Calendar</Button>
+                                <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700">Add Calendar</Button>
                             </form>
 
                             <div className="space-y-2">
-                                <h3 className="font-medium">Your Calendars</h3>
-                                {sources.length === 0 && <p className="text-sm text-muted-foreground">No external calendars added.</p>}
+                                <h3 className="font-semibold text-sm uppercase text-slate-500 tracking-wider">Your Calendars</h3>
+                                {sources.length === 0 && <p className="text-sm text-muted-foreground italic">No external calendars added.</p>}
                                 {sources.map(source => (
-                                    <div key={source.id} className="flex items-center justify-between p-2 border rounded hover:bg-slate-50">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: source.color }} />
-                                            <span className="font-medium">{source.name}</span>
-                                            <span className="text-xs text-muted-foreground">({source.type})</span>
+                                    <div key={source.id} className="flex items-center justify-between p-3 border rounded-xl bg-white shadow-sm hover:shadow-md transition-shadow">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-4 h-4 rounded-full shadow-sm" style={{ backgroundColor: source.color }} />
+                                            <div>
+                                                <p className="font-medium text-slate-800">{source.name}</p>
+                                                <p className="text-xs text-slate-500 uppercase">{source.type}</p>
+                                            </div>
                                         </div>
-                                        <Button variant="ghost" size="icon" onClick={() => handleDeleteSource(source.id)}>
-                                            <Trash2 className="w-4 h-4 text-destructive" />
+                                        <Button variant="ghost" size="icon" onClick={() => handleDeleteSource(source.id)} className="text-slate-400 hover:text-red-500">
+                                            <Trash2 className="w-4 h-4" />
                                         </Button>
                                     </div>
                                 ))}
@@ -219,10 +242,59 @@ export function CalendarView() {
                 events={events}
                 startAccessor="start"
                 endAccessor="end"
-                style={{ height: 'calc(100% - 60px)' }}
+                style={{ height: 'calc(100% - 80px)' }}
                 eventPropGetter={eventStyleGetter}
                 views={['month', 'week', 'day', 'agenda']}
+                onSelectEvent={handleSelectEvent}
+                className="rounded-xl overflow-hidden bg-white shadow-inner"
             />
+
+            <Dialog open={isEventDetailsOpen} onOpenChange={setIsEventDetailsOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>{selectedEvent?.title}</DialogTitle>
+                        <DialogDescription>
+                            {selectedEvent?.start && format(selectedEvent.start, 'PPP p')} - {selectedEvent?.end && format(selectedEvent.end, 'p')}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                        {selectedEvent?.resource?.description && (
+                            <div className="p-4 bg-slate-50 rounded-lg text-sm text-slate-700">
+                                {selectedEvent.resource.description}
+                            </div>
+                        )}
+
+                        <div className="flex flex-col gap-2">
+                            <div className="flex items-center justify-between text-sm">
+                                <span className="text-muted-foreground">Type:</span>
+                                <span className="capitalize font-medium">{selectedEvent?.resource?.type || 'Event'}</span>
+                            </div>
+                            {selectedEvent?.resource?.priority && (
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-muted-foreground">Priority:</span>
+                                    <span className={`capitalize font-medium ${
+                                        selectedEvent.resource.priority === 'urgent' ? 'text-red-600' :
+                                        selectedEvent.resource.priority === 'high' ? 'text-orange-600' :
+                                        'text-blue-600'
+                                    }`}>{selectedEvent.resource.priority}</span>
+                                </div>
+                            )}
+                            {selectedEvent?.resource?.link && (
+                                <div className="pt-2">
+                                    <a
+                                        href={selectedEvent.resource.link}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-blue-600 hover:underline flex items-center gap-1 text-sm"
+                                    >
+                                        Open Link <ExternalLink className="w-3 h-3" />
+                                    </a>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

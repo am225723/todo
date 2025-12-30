@@ -65,7 +65,7 @@ export function TaskList({ tasks, onToggleStatus, title }: TaskListProps) {
 
                 <div className="flex flex-wrap gap-2 mt-2 text-xs text-gray-500">
                   {task.due_date && (
-                    <span>Due: {new Date(task.due_date).toLocaleDateString()}</span>
+                    <span>Due: {new Date(task.due_date).toLocaleDateString()} {new Date(task.due_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                   )}
                   {task.priority && task.priority !== 'medium' && (
                     <span className={`capitalize ${
