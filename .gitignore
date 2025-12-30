@@ -45,5 +45,8 @@ Thumbs.db
 
 # Supabase
 supabase/.branches
-supabase/.temppublic/sw.js
+supabase/.temp
+
+# PWA
+public/sw.js
 public/workbox-*.js

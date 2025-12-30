@@ -28,6 +28,7 @@
     "clsx": "^2.0.0",
     "date-fns": "^3.0.6",
     "dotenv": "^17.2.3",
+    "framer-motion": "^12.23.26",
     "googleapis": "^128.0.0",
     "ical.js": "^1.5.0",
     "lucide-react": "^0.303.0",
