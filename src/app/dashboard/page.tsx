@@ -9,7 +9,8 @@ import { TaskList } from '@/components/dashboard/TaskList';
 import { CalendarView } from '@/components/dashboard/CalendarView';
 import { AgentList } from '@/components/dashboard/AgentList';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, LayoutDashboard, Calendar as CalendarIcon, CheckCircle2, ListTodo, LogOut, Bot } from 'lucide-react';
+import { Plus, LayoutDashboard, Calendar as CalendarIcon, CheckCircle2, ListTodo, LogOut, Bot, User } from 'lucide-react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Dialog,
@@ -232,7 +233,7 @@ export default function DashboardPage() {
           <div className="container mx-auto px-4 py-4 flex justify-between items-center">
               <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                      <img src="/logo.png" alt="Logo" className="w-6 h-6 brightness-0 invert" />
+                      <Image src="/logo.png" alt="Logo" width={24} height={24} className="w-6 h-6 brightness-0 invert" />
                   </div>
                   <div>
                       <h1 className="font-bold text-lg leading-tight text-slate-800 dark:text-slate-100">Integrative Psychiatry</h1>
@@ -590,7 +591,7 @@ export default function DashboardPage() {
                     >
                         <TaskList
                             title="Accomplishments"
-                            tasks={completedTasks}
+                            tasks={allCompletedTasks}
                             onToggleStatus={handleToggleStatus}
                         />
                     </motion.div>

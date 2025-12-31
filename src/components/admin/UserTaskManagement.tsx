@@ -31,6 +31,11 @@ export function UserTaskManagement({ userId, userName, onClose }: UserTaskManage
   const [openInNewWindow, setOpenInNewWindow] = useState(false);
   const [file, setFile] = useState<File | null>(null);
 
+  // Recurring Task State
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurrenceType, setRecurrenceType] = useState('daily');
+  const [recurrenceInterval, setRecurrenceInterval] = useState('1');
+
   const fetchTasks = useCallback(async () => {
     setLoading(true);
     try {

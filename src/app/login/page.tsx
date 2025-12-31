@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
@@ -110,7 +111,7 @@ export default function LoginPage() {
               className="w-20 h-20 mx-auto bg-gradient-to-br from-teal-400 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg shadow-teal-500/20"
               whileHover={{ scale: 1.05, rotate: 5 }}
             >
-              <img src="/logo.png" alt="Logo" className="w-12 h-12 brightness-0 invert" />
+              <Image src="/logo.png" alt="Logo" width={48} height={48} className="w-12 h-12 brightness-0 invert" />
             </motion.div>
             <h1 className="text-3xl font-bold text-white tracking-tight">Welcome Back</h1>
             <p className="text-zinc-400">Enter your 4-digit PIN</p>
