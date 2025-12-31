@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { UserTaskManagement } from '@/components/admin/UserTaskManagement';
+import { AgentManagement } from '@/components/admin/AgentManagement';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, UserPlus, Settings, Bell, ArrowLeft, MoreHorizontal, Power, CheckCircle, XCircle, LayoutList, Shield, LogOut } from 'lucide-react';
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -264,12 +265,12 @@ export default function AdminPage() {
         </motion.div>
 
         <div className="grid gap-6 md:grid-cols-12">
-          {/* Create New User */}
+          {/* Left Column: Create User & Agent Management */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.1 }}
-            className="md:col-span-4"
+            className="md:col-span-4 space-y-6"
           >
             <Card className="border-none shadow-xl shadow-indigo-100">
               <CardHeader className="bg-indigo-600 text-white rounded-t-xl">
@@ -325,9 +326,11 @@ export default function AdminPage() {
                 </form>
               </CardContent>
             </Card>
+
+            <AgentManagement />
           </motion.div>
 
-          {/* Existing Users */}
+          {/* Right Column: Existing Users */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
