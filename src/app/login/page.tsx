@@ -76,7 +76,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen w-full overflow-hidden flex items-center justify-center bg-black relative">
+    <div className="min-h-[100dvh] w-full overflow-hidden flex items-center justify-center bg-black relative">
       {/* Dynamic Background */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_rgba(20,184,166,0.15),transparent_70%)]" />
       <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-20" />
@@ -99,26 +99,26 @@ export default function LoginPage() {
         className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-emerald-600/20 rounded-full blur-3xl"
       />
 
-      <div className="relative z-10 w-full max-w-md p-8">
+      <div className="relative z-10 w-full max-w-md p-6 sm:p-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col items-center space-y-8"
+          className="flex flex-col items-center space-y-4 sm:space-y-8"
         >
           {/* Logo / Header */}
-          <div className="text-center space-y-4">
+          <div className="text-center space-y-2 sm:space-y-4">
             <motion.div
-              className="w-20 h-20 mx-auto bg-gradient-to-br from-teal-400 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg shadow-teal-500/20"
+              className="w-16 h-16 sm:w-20 sm:h-20 mx-auto bg-gradient-to-br from-teal-400 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg shadow-teal-500/20"
               whileHover={{ scale: 1.05, rotate: 5 }}
             >
-              <Image src="/logo.png" alt="Logo" width={48} height={48} className="w-12 h-12 brightness-0 invert" />
+              <Image src="/logo.png" alt="Logo" width={48} height={48} className="w-10 h-10 sm:w-12 sm:h-12 brightness-0 invert" />
             </motion.div>
-            <h1 className="text-3xl font-bold text-white tracking-tight">Welcome Back</h1>
-            <p className="text-zinc-400">Enter your 4-digit PIN</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Welcome Back</h1>
+            <p className="text-zinc-400 text-sm sm:text-base">Enter your 4-digit PIN</p>
           </div>
 
           {/* PIN Dots */}
-          <div className="flex gap-4 h-8 justify-center items-center mb-8">
+          <div className="flex gap-4 h-8 justify-center items-center mb-4 sm:mb-8">
             {[...Array(4)].map((_, i) => (
               <motion.div
                 key={i}
@@ -128,13 +128,13 @@ export default function LoginPage() {
                   backgroundColor: i < pin.length ? "rgb(20 184 166)" : "rgba(255, 255, 255, 0.1)",
                   boxShadow: i < pin.length ? "0 0 10px rgb(20 184 166)" : "none"
                 }}
-                className="w-4 h-4 rounded-full border border-white/10"
+                className="w-3 h-3 sm:w-4 sm:h-4 rounded-full border border-white/10"
               />
             ))}
           </div>
 
           {/* Keypad */}
-          <div className="grid grid-cols-3 gap-6 w-full max-w-[300px]">
+          <div className="grid grid-cols-3 gap-3 sm:gap-6 w-full max-w-[260px] sm:max-w-[300px]">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
               <KeypadButton key={num} onClick={() => handlePinClick(num.toString())}>
                 {num}
@@ -156,12 +156,12 @@ export default function LoginPage() {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
-                className="w-full max-w-[300px] pt-4"
+                className="w-full max-w-[260px] sm:max-w-[300px] pt-4"
               >
                 <button
                   onClick={handleSubmit}
                   disabled={loading}
-                  className="w-full py-4 bg-gradient-to-r from-teal-500 to-emerald-600 rounded-2xl text-white font-bold text-lg shadow-lg shadow-teal-500/25 active:scale-95 transition-transform flex items-center justify-center gap-2"
+                  className="w-full py-3 sm:py-4 bg-gradient-to-r from-teal-500 to-emerald-600 rounded-2xl text-white font-bold text-base sm:text-lg shadow-lg shadow-teal-500/25 active:scale-95 transition-transform flex items-center justify-center gap-2"
                 >
                   {loading ? (
                     <Loader2 className="w-6 h-6 animate-spin" />
@@ -184,7 +184,7 @@ function KeypadButton({ children, onClick, className = "" }: { children: React.R
       whileHover={{ scale: 1.1, backgroundColor: "rgba(255, 255, 255, 0.1)" }}
       whileTap={{ scale: 0.9 }}
       onClick={onClick}
-      className={`w-20 h-20 rounded-full bg-white/5 backdrop-blur-sm border border-white/10 text-white text-2xl font-light flex items-center justify-center transition-colors ${className}`}
+      className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/5 backdrop-blur-sm border border-white/10 text-white text-xl sm:text-2xl font-light flex items-center justify-center transition-colors ${className}`}
     >
       {children}
     </motion.button>
