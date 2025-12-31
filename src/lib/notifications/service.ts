@@ -2,6 +2,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import webpush from 'web-push';
+import nodemailer from 'nodemailer';
 
 interface NotificationPayload {
     userId: string;
@@ -21,6 +22,22 @@ if (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
     );
 }
 
+// Setup Nodemailer
+const createTransporter = () => {
+    if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+        return nodemailer.createTransport({
+            host: process.env.SMTP_HOST,
+            port: Number(process.env.SMTP_PORT) || 587,
+            secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
+            auth: {
+                user: process.env.SMTP_USER,
+                pass: process.env.SMTP_PASS,
+            },
+        });
+    }
+    return null;
+};
+
 export async function sendNotification(payload: NotificationPayload) {
     // Use admin client to ensure we can insert logs regardless of current session context (RLS)
     const supabase = createAdminClient();
@@ -30,9 +47,29 @@ export async function sendNotification(payload: NotificationPayload) {
     let status = 'sent';
     let errorMessage = null;
 
-    // Handle Push Notifications
-    if (payload.type === 'push') {
-        try {
+    try {
+        // Handle Email
+        if (payload.type === 'email') {
+            const transporter = createTransporter();
+            if (transporter) {
+                await transporter.sendMail({
+                    from: process.env.SMTP_FROM || '"Todo App" <no-reply@example.com>',
+                    to: payload.recipient,
+                    subject: payload.subject || 'Notification',
+                    text: payload.message,
+                    html: payload.message.replace(/\n/g, '<br>'), // Simple text to HTML
+                });
+            } else {
+                console.warn('SMTP not configured. Email logged but not sent.');
+                // We mark it as 'sent' because in dev environment we often don't have SMTP
+                // If you want to mark it as failed:
+                // status = 'failed';
+                // errorMessage = 'SMTP configuration missing';
+            }
+        }
+
+        // Handle Push Notifications
+        if (payload.type === 'push') {
             // Recipient for push should be the endpoint or we need to fetch subscriptions
             // We'll fetch all subscriptions for the user
             const { data: subscriptions } = await supabase
@@ -71,11 +108,11 @@ export async function sendNotification(payload: NotificationPayload) {
                 status = 'failed';
                 errorMessage = 'No subscriptions found';
             }
-        } catch (error: any) {
-            console.error('Failed to send push notification:', error);
-            status = 'failed';
-            errorMessage = error.message;
         }
+    } catch (error: any) {
+        console.error(`Failed to send ${payload.type} notification:`, error);
+        status = 'failed';
+        errorMessage = error.message;
     }
 
     const { error } = await supabase.from('todo_notification_logs').insert({
@@ -134,7 +171,7 @@ export async function checkAndSendNotifications() {
             const taskList = tasks.map((t: any) => `- ${t.title}`).join('\n');
             const message = `You have ${tasks.length} pending tasks for today:\n${taskList}`;
 
-            // Send Email (Mock)
+            // Send Email (Real)
             await sendNotification({
                 userId: userData.id,
                 recipient: userData.email,
