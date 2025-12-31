@@ -71,6 +71,14 @@ export function UserTaskManagement({ userId, userName, onClose }: UserTaskManage
       if (file) formData.append('file', file);
       formData.append('status', 'pending');
 
+      if (isRecurring) {
+        formData.append('is_recurring', 'true');
+        formData.append('recurrence_pattern', JSON.stringify({
+            type: recurrenceType,
+            interval: parseInt(recurrenceInterval)
+        }));
+      }
+
       const response = await fetch('/api/tasks', {
         method: 'POST',
         body: formData,
@@ -90,6 +98,9 @@ export function UserTaskManagement({ userId, userName, onClose }: UserTaskManage
         setAgentUrl('');
         setOpenInNewWindow(false);
         setFile(null);
+        setIsRecurring(false);
+        setRecurrenceType('daily');
+        setRecurrenceInterval('1');
 
         fetchTasks();
       } else {
@@ -155,14 +166,56 @@ export function UserTaskManagement({ userId, userName, onClose }: UserTaskManage
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="dueDate">Due Date</Label>
+                  <Label htmlFor="dueDate">Due By</Label>
                   <Input
                     id="dueDate"
-                    type="date"
+                    type="datetime-local"
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
                   />
                 </div>
+              </div>
+
+              {/* Recurrence Options */}
+              <div className="space-y-2 border p-3 rounded-lg bg-slate-50/50">
+                  <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="is_recurring"
+                        checked={isRecurring}
+                        onCheckedChange={(checked) => setIsRecurring(!!checked)}
+                      />
+                      <Label htmlFor="is_recurring" className="font-medium cursor-pointer">Repeat Task?</Label>
+                  </div>
+
+                  {isRecurring && (
+                      <div className="space-y-3 pl-6 pt-2">
+                          <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                  <Label className="text-xs text-muted-foreground">Frequency</Label>
+                                  <Select value={recurrenceType} onValueChange={setRecurrenceType}>
+                                      <SelectTrigger className="h-8 text-xs bg-white">
+                                          <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                          <SelectItem value="daily">Daily</SelectItem>
+                                          <SelectItem value="weekly">Weekly</SelectItem>
+                                          <SelectItem value="monthly">Monthly</SelectItem>
+                                      </SelectContent>
+                                  </Select>
+                              </div>
+                              <div>
+                                  <Label className="text-xs text-muted-foreground">Interval</Label>
+                                  <Input
+                                      type="number"
+                                      min="1"
+                                      value={recurrenceInterval}
+                                      onChange={(e) => setRecurrenceInterval(e.target.value)}
+                                      className="h-8 text-xs bg-white"
+                                  />
+                              </div>
+                          </div>
+                      </div>
+                  )}
               </div>
 
               <div className="space-y-4 border p-4 rounded-md">
@@ -239,9 +292,14 @@ export function UserTaskManagement({ userId, userName, onClose }: UserTaskManage
                     {task.description && (
                       <p className="text-sm text-muted-foreground">{task.description}</p>
                     )}
-                    {task.due_date && (
-                      <p className="text-xs text-muted-foreground">Due: {new Date(task.due_date).toLocaleDateString()}</p>
-                    )}
+                    <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                        {task.due_date && (
+                        <span>Due: {new Date(task.due_date).toLocaleDateString()} {new Date(task.due_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        )}
+                        {task.is_recurring && (
+                            <span className="text-indigo-600 font-medium">Recurring</span>
+                        )}
+                    </div>
                     {task.is_agent_task && (
                       <p className="text-xs text-purple-600">🤖 Agent Task</p>
                     )}
