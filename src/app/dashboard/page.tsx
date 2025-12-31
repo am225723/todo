@@ -7,8 +7,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { Task } from '@/types';
 import { TaskList } from '@/components/dashboard/TaskList';
 import { CalendarView } from '@/components/dashboard/CalendarView';
+import { AgentList } from '@/components/dashboard/AgentList';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, LayoutDashboard, Calendar as CalendarIcon, CheckCircle2, ListTodo, LogOut } from 'lucide-react';
+import { Plus, LayoutDashboard, Calendar as CalendarIcon, CheckCircle2, ListTodo, LogOut, Bot } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Dialog,
@@ -25,7 +26,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function DashboardPage() {
-  const { user, profile, loading, isAdmin } = useAuth();
+  const { user: currentUser, profile, loading, isAdmin } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -46,12 +47,12 @@ export default function DashboardPage() {
   const [recurrenceInterval, setRecurrenceInterval] = useState('1');
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!loading && !currentUser) {
       window.location.href = '/login';
-    } else if (user) {
+    } else if (currentUser) {
       fetchTasks();
     }
-  }, [user, loading]);
+  }, [currentUser, loading]);
 
   const fetchTasks = async () => {
     try {
@@ -223,13 +224,13 @@ export default function DashboardPage() {
 
               <div className="flex items-center gap-4">
                    <div className="hidden md:block text-right">
-                       <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">{profile?.display_name || user?.email?.split('@')[0]}</p>
+                       <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">{profile?.display_name || currentUser?.email?.split('@')[0]}</p>
                        <p className="text-xs text-slate-500">{isAdmin ? 'Administrator' : 'Client'}</p>
                    </div>
                    <Avatar className="h-10 w-10 border-2 border-white shadow-sm cursor-pointer hover:scale-105 transition-transform">
                        <AvatarImage src={profile?.avatar_url || ''} />
                        <AvatarFallback className="bg-indigo-100 text-indigo-700">
-                            {user?.email?.substring(0,2).toUpperCase()}
+                            {currentUser?.email?.substring(0,2).toUpperCase()}
                        </AvatarFallback>
                    </Avatar>
                    <Button variant="ghost" size="icon" onClick={async () => {
@@ -433,11 +434,14 @@ export default function DashboardPage() {
                     <TabsTrigger value="upcoming" className="rounded-full px-6 data-[state=active]:bg-indigo-600 data-[state=active]:text-white transition-all">
                         <ListTodo className="w-4 h-4 mr-2" /> Upcoming
                     </TabsTrigger>
-                    <TabsTrigger value="completed" className="rounded-full px-6 data-[state=active]:bg-indigo-600 data-[state=active]:text-white transition-all">
-                        <CheckCircle2 className="w-4 h-4 mr-2" /> Done
+                    <TabsTrigger value="agents" className="rounded-full px-6 data-[state=active]:bg-indigo-600 data-[state=active]:text-white transition-all">
+                        <Bot className="w-4 h-4 mr-2" /> Agents
                     </TabsTrigger>
                     <TabsTrigger value="calendar" className="rounded-full px-6 data-[state=active]:bg-indigo-600 data-[state=active]:text-white transition-all">
                         <CalendarIcon className="w-4 h-4 mr-2" /> Calendar
+                    </TabsTrigger>
+                    <TabsTrigger value="completed" className="rounded-full px-6 data-[state=active]:bg-indigo-600 data-[state=active]:text-white transition-all">
+                        <CheckCircle2 className="w-4 h-4 mr-2" /> Done
                     </TabsTrigger>
                 </TabsList>
             </div>
@@ -473,6 +477,28 @@ export default function DashboardPage() {
                     </motion.div>
                 </TabsContent>
 
+                <TabsContent value="agents" className="mt-0">
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.3 }}
+                    >
+                        <AgentList />
+                    </motion.div>
+                </TabsContent>
+
+                <TabsContent value="calendar" className="mt-0">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ duration: 0.3 }}
+                    >
+                        <CalendarView />
+                    </motion.div>
+                </TabsContent>
+
                 <TabsContent value="completed" className="mt-0">
                      <motion.div
                         initial={{ opacity: 0, x: -20 }}
@@ -485,17 +511,6 @@ export default function DashboardPage() {
                             tasks={completedTasks}
                             onToggleStatus={handleToggleStatus}
                         />
-                    </motion.div>
-                </TabsContent>
-
-                <TabsContent value="calendar" className="mt-0">
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        transition={{ duration: 0.3 }}
-                    >
-                        <CalendarView />
                     </motion.div>
                 </TabsContent>
             </AnimatePresence>
