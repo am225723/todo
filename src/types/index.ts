@@ -14,6 +14,7 @@ export interface User {
   email: string;
   pin_hash: string;
   pin_salt: string;
+  role: string;
   created_at: string;
   updated_at: string;
   is_active: boolean;
@@ -113,6 +114,17 @@ export interface CalendarSource {
   updated_at: string;
 }
 
+export interface Agent {
+  id: string;
+  name: string;
+  description: string | null;
+  url: string;
+  open_in_new_window: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -165,6 +177,11 @@ export interface Database {
         Row: CalendarSource;
         Insert: Omit<CalendarSource, 'id' | 'created_at' | 'updated_at'>;
         Update: Partial<Omit<CalendarSource, 'id' | 'created_at' | 'updated_at'>>;
+      };
+      todo_agents: {
+        Row: Agent;
+        Insert: Omit<Agent, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<Agent, 'id' | 'created_at' | 'updated_at'>>;
       };
     };
   };
