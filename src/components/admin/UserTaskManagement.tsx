@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -31,16 +31,7 @@ export function UserTaskManagement({ userId, userName, onClose }: UserTaskManage
   const [openInNewWindow, setOpenInNewWindow] = useState(false);
   const [file, setFile] = useState<File | null>(null);
 
-  // Recurring Task State
-  const [isRecurring, setIsRecurring] = useState(false);
-  const [recurrenceType, setRecurrenceType] = useState('daily');
-  const [recurrenceInterval, setRecurrenceInterval] = useState('1');
-
-  useEffect(() => {
-    fetchTasks();
-  }, [userId]);
-
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     setLoading(true);
     try {
       const response = await fetch(`/api/tasks?userId=${userId}`);
@@ -58,7 +49,11 @@ export function UserTaskManagement({ userId, userName, onClose }: UserTaskManage
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    fetchTasks();
+  }, [fetchTasks]);
 
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();

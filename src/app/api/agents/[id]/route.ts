@@ -3,12 +3,20 @@ import { createClient } from '@supabase/supabase-js';
 import { createClient as createAuthClient } from '@/lib/supabase/server';
 import { Database } from '@/types';
 
-// Initialize Supabase Admin client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_SUPABASE_SERVICE_ROLE_KEY || '';
-const supabase = createClient<Database>(supabaseUrl, supabaseServiceKey);
+export const dynamic = 'force-dynamic';
 
-async function checkAdmin() {
+function getServiceSupabase() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_SUPABASE_SERVICE_ROLE_KEY || '';
+
+  if (!supabaseUrl || !supabaseServiceKey) {
+    throw new Error('Missing Supabase credentials');
+  }
+
+  return createClient<Database>(supabaseUrl, supabaseServiceKey);
+}
+
+async function checkAdmin(supabase: any) {
     const authClient = createAuthClient();
     const { data: { user: authUser }, error: authError } = await authClient.auth.getUser();
 
@@ -39,7 +47,8 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const authCheck = await checkAdmin();
+    const supabase = getServiceSupabase();
+    const authCheck = await checkAdmin(supabase);
     if (!authCheck.authorized) {
         return NextResponse.json({ error: authCheck.message }, { status: authCheck.status || 403 });
     }
@@ -83,7 +92,8 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const authCheck = await checkAdmin();
+    const supabase = getServiceSupabase();
+    const authCheck = await checkAdmin(supabase);
     if (!authCheck.authorized) {
         return NextResponse.json({ error: authCheck.message }, { status: authCheck.status || 403 });
     }

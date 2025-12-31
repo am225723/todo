@@ -3,13 +3,22 @@ import { createClient } from '@supabase/supabase-js';
 import { createClient as createAuthClient } from '@/lib/supabase/server';
 import { Database } from '@/types';
 
-// Initialize Supabase Admin client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_SUPABASE_SERVICE_ROLE_KEY || '';
-const supabase = createClient<Database>(supabaseUrl, supabaseServiceKey);
+export const dynamic = 'force-dynamic';
+
+function getServiceSupabase() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_SUPABASE_SERVICE_ROLE_KEY || '';
+
+  if (!supabaseUrl || !supabaseServiceKey) {
+    throw new Error('Missing Supabase credentials');
+  }
+
+  return createClient<Database>(supabaseUrl, supabaseServiceKey);
+}
 
 export async function GET() {
   try {
+    const supabase = getServiceSupabase();
     // Public/Authenticated read access
     const { data: agents, error } = await supabase
       .from('todo_agents')
@@ -31,6 +40,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const supabase = getServiceSupabase();
     // 1. Auth Check
     const authClient = createAuthClient();
     const { data: { user: authUser }, error: authError } = await authClient.auth.getUser();
