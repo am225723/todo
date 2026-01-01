@@ -5,6 +5,21 @@ import { Button } from '@/components/ui/button';
 import { Bell, BellOff } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
+function urlBase64ToUint8Array(base64String: string) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding)
+        .replace(/\-/g, '+')
+        .replace(/_/g, '/');
+
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
+
 export function NotificationManager() {
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [isSupported, setIsSupported] = useState(false);
@@ -29,15 +44,36 @@ export function NotificationManager() {
         // Register Push Subscription
         const registration = await navigator.serviceWorker.ready;
         try {
-            // VAPID Public Key would go here
-            // const subscription = await registration.pushManager.subscribe({
-            //     userVisibleOnly: true,
-            //     applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!)
-            // });
+            const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+            if (!vapidKey) {
+                console.warn('NEXT_PUBLIC_VAPID_PUBLIC_KEY is missing. Push notifications will not work.');
+                return;
+            }
+
+            const subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(vapidKey)
+            });
+
             // Send subscription to backend
-            console.log("Notification permission granted. Service Worker ready.");
+            const response = await fetch('/api/notifications/subscribe', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ subscription }),
+            });
+
+            if (!response.ok) {
+                console.error('Failed to save subscription:', await response.text());
+                toast({ title: "Subscription Error", description: "Could not save notification settings.", variant: "destructive" });
+            } else {
+                console.log("Notification permission granted and saved.");
+            }
+
         } catch (e) {
             console.error("Failed to subscribe to push", e);
+            toast({ title: "Push Error", description: "Failed to subscribe to push notifications.", variant: "destructive" });
         }
 
       } else {
