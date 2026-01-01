@@ -115,8 +115,48 @@ export async function sendNotification(payload: NotificationPayload) {
         errorMessage = error.message;
     }
 
+    // Attempt to resolve the correct user_id for the log table.
+    // The system currently has a discrepancy where tasks use 'TODO_USERS' (uppercase table)
+    // but the notification logs reference 'todo_users' (lowercase table) via foreign key.
+    // We try to find the matching user in 'todo_users' by email.
+    let logUserId = payload.userId;
+
+    try {
+        let email: string | null = null;
+
+        // Always try to fetch email from source user first to ensure accuracy
+        const { data: sourceUser } = await supabase
+            .from('TODO_USERS')
+            .select('email')
+            .eq('id', payload.userId)
+            .single();
+
+        if (sourceUser) {
+            email = (sourceUser as any).email;
+        }
+
+        // Fallback to recipient if it looks like an email and we didn't find one
+        if (!email && payload.recipient.includes('@')) {
+            email = payload.recipient;
+        }
+
+        if (email) {
+            const { data: targetUser } = await supabase
+                .from('todo_users' as any)
+                .select('id')
+                .eq('email', email)
+                .single();
+
+            if (targetUser) {
+                logUserId = (targetUser as any).id;
+            }
+        }
+    } catch (err) {
+        console.warn('Error resolving user ID for logging:', err);
+    }
+
     const { error } = await supabase.from('todo_notification_logs').insert({
-        user_id: payload.userId,
+        user_id: logUserId,
         recipient: payload.recipient,
         type: payload.type,
         status: status,
