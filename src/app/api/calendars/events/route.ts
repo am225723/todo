@@ -76,6 +76,17 @@ export async function GET(request: Request) {
                 const icalData = await response.text();
                 const jcalData = ICAL.parse(icalData);
                 const comp = new ICAL.Component(jcalData);
+
+                // Register timezones from the calendar feed
+                const vtimezones = comp.getAllSubcomponents('vtimezone');
+                vtimezones.forEach((vtz: any) => {
+                    try {
+                        ICAL.TimezoneService.register(vtz);
+                    } catch (tzError) {
+                        console.warn('Failed to register timezone:', tzError);
+                    }
+                });
+
                 const vevents = comp.getAllSubcomponents('vevent');
 
                 const sourceEvents = vevents.map((vevent: any) => {
