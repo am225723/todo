@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
-import { format, parse, startOfWeek, getDay } from 'date-fns';
+import { Calendar, dateFnsLocalizer, View } from 'react-big-calendar';
+import { format, parse, startOfWeek, getDay, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from '@/hooks/use-toast';
-import { Trash2, Calendar as CalendarIcon, ExternalLink } from 'lucide-react';
+import { Trash2, Calendar as CalendarIcon, ExternalLink, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const locales = {
@@ -38,6 +38,9 @@ export function CalendarView() {
     const [events, setEvents] = useState<any[]>([]);
     const [sources, setSources] = useState<CalendarSource[]>([]);
     const [isManageOpen, setIsManageOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [viewDate, setViewDate] = useState(new Date());
+    const [view, setView] = useState<View>('month');
 
     // Event Details Modal
     const [selectedEvent, setSelectedEvent] = useState<any>(null);
@@ -55,6 +58,7 @@ export function CalendarView() {
     }, []);
 
     const fetchEvents = async () => {
+        setIsLoading(true);
         try {
             const res = await fetch('/api/calendars/events');
             if (res.ok) {
@@ -69,6 +73,9 @@ export function CalendarView() {
             }
         } catch (error) {
             console.error("Failed to fetch events", error);
+            toast({ title: "Error", description: "Failed to fetch calendar events", variant: "destructive" });
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -158,20 +165,110 @@ export function CalendarView() {
         };
     };
 
+    const handleNavigate = (action: 'PREV' | 'NEXT' | 'TODAY') => {
+        if (action === 'TODAY') {
+            setViewDate(new Date());
+            return;
+        }
+
+        switch (view) {
+            case 'month':
+                setViewDate(action === 'NEXT' ? addMonths(viewDate, 1) : subMonths(viewDate, 1));
+                break;
+            case 'week':
+                setViewDate(action === 'NEXT' ? addWeeks(viewDate, 1) : subWeeks(viewDate, 1));
+                break;
+            case 'day':
+                setViewDate(action === 'NEXT' ? addDays(viewDate, 1) : subDays(viewDate, 1));
+                break;
+            case 'agenda':
+                setViewDate(action === 'NEXT' ? addMonths(viewDate, 1) : subMonths(viewDate, 1));
+                break;
+        }
+    };
+
     return (
-        <div className="h-[800px] p-6 bg-white/40 backdrop-blur-xl rounded-3xl border border-white/20 shadow-2xl">
-            <div className="flex justify-between items-center mb-6">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 bg-indigo-500/10 rounded-xl">
-                        <CalendarIcon className="w-6 h-6 text-indigo-600" />
+        <div className="h-[800px] p-6 bg-white/40 backdrop-blur-xl rounded-3xl border border-white/20 shadow-2xl flex flex-col">
+            {/* Header Section */}
+            <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 gap-4">
+
+                {/* Title & Navigation */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full xl:w-auto">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-indigo-500/10 rounded-xl">
+                            <CalendarIcon className="w-6 h-6 text-indigo-600" />
+                        </div>
+                        <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-violet-600 whitespace-nowrap">
+                            {format(viewDate, 'MMMM yyyy')}
+                        </h2>
                     </div>
-                    <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-violet-600">Calendar</h2>
+
+                    <div className="flex items-center gap-1 bg-white/50 p-1 rounded-lg border border-white/20">
+                        <Button variant="ghost" size="icon" onClick={() => handleNavigate('PREV')} className="h-8 w-8">
+                            <ChevronLeft className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleNavigate('TODAY')} className="h-8 text-xs font-medium">
+                            Today
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleNavigate('NEXT')} className="h-8 w-8">
+                            <ChevronRight className="w-4 h-4" />
+                        </Button>
+                    </div>
                 </div>
-                <Dialog open={isManageOpen} onOpenChange={setIsManageOpen}>
-                    <DialogTrigger asChild>
-                        <Button variant="outline" className="border-indigo-200 text-indigo-700 hover:bg-indigo-50">Manage Calendars</Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[500px]">
+
+                {/* Actions & View Switcher */}
+                <div className="flex flex-wrap items-center gap-2 w-full xl:w-auto justify-end">
+                     <div className="flex items-center gap-1 bg-white/50 p-1 rounded-lg border border-white/20">
+                        <Button
+                            variant={view === 'month' ? 'secondary' : 'ghost'}
+                            size="sm"
+                            onClick={() => setView('month')}
+                            className="h-8 text-xs"
+                        >
+                            Month
+                        </Button>
+                        <Button
+                            variant={view === 'week' ? 'secondary' : 'ghost'}
+                            size="sm"
+                            onClick={() => setView('week')}
+                            className="h-8 text-xs"
+                        >
+                            Week
+                        </Button>
+                        <Button
+                            variant={view === 'day' ? 'secondary' : 'ghost'}
+                            size="sm"
+                            onClick={() => setView('day')}
+                            className="h-8 text-xs"
+                        >
+                            Day
+                        </Button>
+                        <Button
+                            variant={view === 'agenda' ? 'secondary' : 'ghost'}
+                            size="sm"
+                            onClick={() => setView('agenda')}
+                            className="h-8 text-xs"
+                        >
+                            List
+                        </Button>
+                    </div>
+
+                     <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={fetchEvents}
+                        disabled={isLoading}
+                        className={isLoading ? 'animate-spin' : ''}
+                        title="Refresh Events"
+                    >
+                        <RefreshCw className="w-4 h-4 text-indigo-600" />
+                    </Button>
+
+                    <Dialog open={isManageOpen} onOpenChange={setIsManageOpen}>
+                        <DialogTrigger asChild>
+                            <Button variant="outline" className="border-indigo-200 text-indigo-700 hover:bg-indigo-50 h-9 text-xs">Manage Sources</Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[500px]">
                         <DialogHeader>
                             <DialogTitle>Manage Calendar Sources</DialogTitle>
                         </DialogHeader>
@@ -235,6 +332,7 @@ export function CalendarView() {
                         </div>
                     </DialogContent>
                 </Dialog>
+                </div>
             </div>
 
             <Calendar
@@ -242,11 +340,16 @@ export function CalendarView() {
                 events={events}
                 startAccessor="start"
                 endAccessor="end"
-                style={{ height: 'calc(100% - 80px)' }}
+                style={{ flex: 1 }}
                 eventPropGetter={eventStyleGetter}
                 views={['month', 'week', 'day', 'agenda']}
+                view={view}
+                onView={setView}
                 onSelectEvent={handleSelectEvent}
                 className="rounded-xl overflow-hidden bg-white shadow-inner"
+                date={viewDate}
+                onNavigate={setViewDate}
+                toolbar={false}
             />
 
             <Dialog open={isEventDetailsOpen} onOpenChange={setIsEventDetailsOpen}>
