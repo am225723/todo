@@ -49,14 +49,21 @@ export async function GET(request: Request) {
         .eq('user_id', userId)
         .not('due_date', 'is', null);
 
-    const internalEvents = (tasks || []).map((task: any) => ({
-        id: task.id,
-        title: task.title,
-        start: task.due_date,
-        end: task.due_date,
-        allDay: true,
-        resource: { type: 'task', priority: task.priority, status: task.status }
-    }));
+    const internalEvents = (tasks || []).map((task: any) => {
+        // Treat internal tasks as timed events
+        const startDate = new Date(task.due_date);
+        // Default duration 1 hour for display if no explicit end time
+        const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
+
+        return {
+            id: task.id,
+            title: task.title,
+            start: startDate.toISOString(),
+            end: endDate.toISOString(),
+            allDay: false,
+            resource: { type: 'task', priority: task.priority, status: task.status }
+        };
+    });
 
     // 2. Fetch external calendar sources
     const { data: sources, error: sourcesError } = await supabase
